@@ -1,5 +1,6 @@
 use rusqlite::{Connection, Result};
 
+#[derive(Debug)]
 pub(crate) struct HebrewDb(Connection);
 
 impl HebrewDb {
