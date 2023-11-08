@@ -20,10 +20,10 @@ impl AppState {
     }
 }
 
-pub async fn handler() -> Html<&'static str> {
+pub async fn home_page() -> Html<&'static str> {
     Html("<h1>Hello, World!</h1>")
 }
 
-pub async fn get_mistakes(State(state): State<AppState>) -> impl IntoResponse {
+pub async fn mistakes(State(state): State<AppState>) -> impl IntoResponse {
     Json(state.db.lock().unwrap().mistaken_words().unwrap())
 }

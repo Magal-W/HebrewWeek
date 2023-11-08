@@ -5,15 +5,19 @@ use axum::{routing::get, Router};
 use rusqlite::Result;
 use std::net::SocketAddr;
 use tokio;
+use tower_http::cors::{Any, CorsLayer};
 
-use crate::api::{get_mistakes, handler, AppState};
+use crate::api::{home_page, mistakes, AppState};
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    let cors = CorsLayer::new().allow_origin(Any);
+
     let app = Router::new()
-        .route("/", get(handler))
-        .route("/api/mistakes", get(get_mistakes))
-        .with_state(AppState::new()?);
+        .route("/", get(home_page))
+        .route("/api/mistakes", get(mistakes))
+        .with_state(AppState::new()?)
+        .layer(cors);
 
     // run it
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
