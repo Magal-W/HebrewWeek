@@ -1,4 +1,5 @@
-use rusqlite::{Connection, Result};
+use anyhow::{Context, Result};
+use rusqlite::Connection;
 
 #[derive(Debug)]
 pub(crate) struct HebrewDb(Connection);
@@ -7,7 +8,7 @@ impl HebrewDb {
     const DB_PATH: &str = "hebrew.db";
 
     pub fn new() -> Result<Self> {
-        let db = Connection::open(Self::DB_PATH)?;
+        let db = Connection::open(Self::DB_PATH).context("Failed to connect to db")?;
         let hebrew_db = HebrewDb(db);
         hebrew_db.create_tables()?;
 
@@ -62,7 +63,8 @@ impl HebrewDb {
             .collect::<Vec<String>>()
             .join(",\n");
         let table_query = format!("CREATE TABLE IF NOT EXISTS {table_name} ({fields});");
-        db.execute(&table_query, ())?;
+        db.execute(&table_query, ())
+            .context(format!("Failed creating table {table_name}"))?;
         Ok(())
     }
 }

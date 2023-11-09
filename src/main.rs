@@ -1,23 +1,20 @@
 mod api;
+mod error;
 mod hebrew_db;
+mod routes;
 
-use axum::{routing::get, Router};
+use crate::api::AppState;
+use crate::routes::routes;
 use rusqlite::Result;
 use std::net::SocketAddr;
 use tokio;
 use tower_http::cors::{Any, CorsLayer};
 
-use crate::api::{home_page, mistakes, AppState};
-
 #[tokio::main]
 async fn main() -> Result<()> {
     let cors = CorsLayer::new().allow_origin(Any);
 
-    let app = Router::new()
-        .route("/", get(home_page))
-        .route("/api/mistakes", get(mistakes))
-        .with_state(AppState::new()?)
-        .layer(cors);
+    let app = routes().with_state(AppState::new()?).layer(cors);
 
     // run it
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
