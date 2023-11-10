@@ -1,5 +1,5 @@
-use anyhow::{Context, Result};
-use rusqlite::Connection;
+use anyhow::{anyhow, Context, Result};
+use rusqlite::{named_params, Connection};
 
 #[derive(Debug)]
 pub(crate) struct HebrewDb(Connection);
@@ -21,6 +21,29 @@ impl HebrewDb {
             .query_map([], |row| row.get(0))?
             .collect::<Result<Vec<_>, _>>()?;
         Ok(mistakes)
+    }
+
+    pub fn report_mistake(&self, name: &str, mistake: &str) -> Result<()> {
+        let mut select_stmt = self
+            .0
+            .prepare("SELECT * FROM Mistakes WHERE Name = :name AND Mistake = :mistake")?;
+
+        let mut statement = if select_stmt
+            .exists(named_params! {":name": name, ":mistake": mistake})?
+        {
+            self.0
+                .prepare("UPDATE SET Count = Count + 1 WHERE Name = :name AND Mistake = :mistake")?
+        } else {
+            self.0
+                .prepare("INSERT INTO Mistakes VALUES(:name, :mistake, 1)")?
+        };
+        let rows_changed = statement.execute(named_params! {":name": name, ":mistake": mistake})?;
+        if rows_changed != 1 {
+            return Err(anyhow!(format!(
+                "Failed to report mistake {mistake} of {name}"
+            )));
+        }
+        Ok(())
     }
 
     fn create_tables(&self) -> Result<()> {
