@@ -1,20 +1,20 @@
 mod api;
 mod error;
 mod hebrew_db;
-mod routes;
+mod types;
 
+use crate::api::routes;
 use crate::api::AppState;
-use crate::routes::routes;
-use rusqlite::Result;
 use std::net::SocketAddr;
-use tokio;
 use tower_http::cors::{Any, CorsLayer};
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() {
     let cors = CorsLayer::new().allow_origin(Any);
 
-    let app = routes().with_state(AppState::new()?).layer(cors);
+    let app = routes()
+        .with_state(AppState::new().expect("Failed creating app state"))
+        .layer(cors);
 
     // run it
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
@@ -23,5 +23,4 @@ async fn main() -> Result<()> {
         .serve(app.into_make_service())
         .await
         .unwrap();
-    Ok(())
 }

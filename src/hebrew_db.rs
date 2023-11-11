@@ -1,6 +1,8 @@
 use anyhow::{anyhow, Context, Result};
 use rusqlite::{named_params, Connection};
 
+use crate::types::{Mistake, ReportMistake};
+
 #[derive(Debug)]
 pub(crate) struct HebrewDb(Connection);
 
@@ -23,27 +25,36 @@ impl HebrewDb {
         Ok(mistakes)
     }
 
-    pub fn report_mistake(&self, name: &str, mistake: &str) -> Result<()> {
+    pub fn report_mistake(&self, report: &ReportMistake) -> Result<Mistake> {
+        let name = &report.name;
+        let mistake = &report.mistake;
         let mut select_stmt = self
             .0
             .prepare("SELECT * FROM Mistakes WHERE Name = :name AND Mistake = :mistake")?;
 
-        let mut statement = if select_stmt
-            .exists(named_params! {":name": name, ":mistake": mistake})?
-        {
+        let params = named_params! {":name": name, ":mistake": mistake};
+        let mut statement = if select_stmt.exists(params)? {
             self.0
                 .prepare("UPDATE SET Count = Count + 1 WHERE Name = :name AND Mistake = :mistake")?
         } else {
             self.0
                 .prepare("INSERT INTO Mistakes VALUES(:name, :mistake, 1)")?
         };
-        let rows_changed = statement.execute(named_params! {":name": name, ":mistake": mistake})?;
+        let rows_changed = statement.execute(params)?;
         if rows_changed != 1 {
             return Err(anyhow!(format!(
                 "Failed to report mistake {mistake} of {name}"
             )));
         }
-        Ok(())
+        select_stmt
+            .query_row(params, |row| {
+                Ok(Mistake {
+                    name: name.to_owned(),
+                    mistake: mistake.to_owned(),
+                    count: row.get("Count")?,
+                })
+            })
+            .map_err(|err| err.into())
     }
 
     fn create_tables(&self) -> Result<()> {
