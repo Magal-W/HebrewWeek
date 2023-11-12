@@ -1,7 +1,6 @@
 use crate::hebrew_db::HebrewDb;
 use crate::{error::AppError, types::ReportMistake};
 use axum::response::IntoResponse;
-use axum::Form;
 use axum::{extract::State, response::Html, Json};
 use axum::{routing::get, Router};
 use std::sync::{Arc, Mutex};
@@ -35,7 +34,14 @@ pub async fn mistakes(State(state): State<AppState>) -> Result<impl IntoResponse
 
 pub async fn report_mistake(
     State(state): State<AppState>,
-    Form(payload): Form<ReportMistake>,
+    Json(payload): Json<ReportMistake>,
 ) -> Result<impl IntoResponse, AppError> {
-    Ok(Json(state.db.lock().unwrap().report_mistake(&payload)?))
+    eprintln!("Reported mistake {0} by {1}", payload.mistake, payload.name);
+    match state.db.lock().unwrap().report_mistake(&payload) {
+        Ok(ok) => Ok(Json(ok)),
+        Err(err) => {
+            eprintln!("Failed {err}");
+            Err(err.into())
+        }
+    }
 }

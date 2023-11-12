@@ -34,8 +34,9 @@ impl HebrewDb {
 
         let params = named_params! {":name": name, ":mistake": mistake};
         let mut statement = if select_stmt.exists(params)? {
-            self.0
-                .prepare("UPDATE SET Count = Count + 1 WHERE Name = :name AND Mistake = :mistake")?
+            self.0.prepare(
+                "UPDATE Mistakes SET Count = Count + 1 WHERE Name = :name AND Mistake = :mistake",
+            )?
         } else {
             self.0
                 .prepare("INSERT INTO Mistakes VALUES(:name, :mistake, 1)")?

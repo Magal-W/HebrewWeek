@@ -5,12 +5,16 @@ mod types;
 
 use crate::api::routes;
 use crate::api::AppState;
+use hyper::Method;
 use std::net::SocketAddr;
 use tower_http::cors::{Any, CorsLayer};
 
 #[tokio::main]
 async fn main() {
-    let cors = CorsLayer::new().allow_origin(Any);
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_headers(Any)
+        .allow_methods([Method::GET, Method::POST]);
 
     let app = routes()
         .with_state(AppState::new().expect("Failed creating app state"))
