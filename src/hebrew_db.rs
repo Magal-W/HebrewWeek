@@ -1,7 +1,8 @@
 use anyhow::{anyhow, Context, Result};
+use itertools::Itertools;
 use rusqlite::{named_params, Connection};
 
-use crate::types::{Mistake, ReportMistake};
+use crate::types::{CountedMistake, MistakeReport, PersonMistake, PersonMistakes};
 
 #[derive(Debug)]
 pub(crate) struct HebrewDb(Connection);
@@ -17,15 +18,50 @@ impl HebrewDb {
         Ok(hebrew_db)
     }
 
-    pub fn mistaken_words(&self) -> Result<Vec<String>> {
-        let mut statement = self.0.prepare("SELECT DISTINCT Mistake FROM Mistakes")?;
-        let mistakes = statement
-            .query_map([], |row| row.get(0))?
-            .collect::<Result<Vec<_>, _>>()?;
+    pub fn all_mistakes(&self) -> Result<Vec<PersonMistakes>> {
+        let mut statement = self.0.prepare("SELECT * FROM Mistakes ORDER BY Name")?;
+        let mistakes_group = statement
+            .query_map([], |row| {
+                Ok(PersonMistake {
+                    name: row.get("Name")?,
+                    counted_mistake: CountedMistake {
+                        mistake: row.get("Mistake")?,
+                        count: row.get("Count")?,
+                    },
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()?
+            .into_iter()
+            .group_by(|element| element.name.clone());
+        let mistakes = mistakes_group
+            .into_iter()
+            .map(|(key, group)| PersonMistakes {
+                name: key,
+                counted_mistakes: group.map(|mis| mis.counted_mistake).collect(),
+            })
+            .collect();
         Ok(mistakes)
     }
 
-    pub fn report_mistake(&self, report: &ReportMistake) -> Result<Mistake> {
+    pub fn mistakes(&self, name: &str) -> Result<PersonMistakes> {
+        let mut statement = self
+            .0
+            .prepare("SELECT * FROM Mistakes WHERE Name = :name")?;
+        let mistakes = statement
+            .query_map(named_params! {":name": name}, |row| {
+                Ok(CountedMistake {
+                    mistake: row.get("Mistake")?,
+                    count: row.get("Count")?,
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(PersonMistakes {
+            name: name.to_owned(),
+            counted_mistakes: mistakes,
+        })
+    }
+
+    pub fn report_mistake(&self, report: &MistakeReport) -> Result<PersonMistake> {
         let name = &report.name;
         let mistake = &report.mistake;
         let mut select_stmt = self
@@ -41,18 +77,22 @@ impl HebrewDb {
             self.0
                 .prepare("INSERT INTO Mistakes VALUES(:name, :mistake, 1)")?
         };
+
         let rows_changed = statement.execute(params)?;
         if rows_changed != 1 {
             return Err(anyhow!(format!(
                 "Failed to report mistake {mistake} of {name}"
             )));
         }
+
         select_stmt
             .query_row(params, |row| {
-                Ok(Mistake {
+                Ok(PersonMistake {
                     name: name.to_owned(),
-                    mistake: mistake.to_owned(),
-                    count: row.get("Count")?,
+                    counted_mistake: CountedMistake {
+                        mistake: mistake.to_owned(),
+                        count: row.get("Count")?,
+                    },
                 })
             })
             .map_err(|err| err.into())

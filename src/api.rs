@@ -1,5 +1,7 @@
+use crate::error::AppError;
 use crate::hebrew_db::HebrewDb;
-use crate::{error::AppError, types::ReportMistake};
+use crate::types::MistakeReport;
+use axum::extract::Path;
 use axum::response::IntoResponse;
 use axum::{extract::State, response::Html, Json};
 use axum::{routing::get, Router};
@@ -22,7 +24,8 @@ impl AppState {
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/", get(home_page))
-        .route("/mistakes", get(mistakes).post(report_mistake))
+        .route("/mistakes", get(all_mistakes).post(report_mistake))
+        .route("/mistakes/:name", get(mistakes))
 }
 
 pub async fn home_page() -> Html<&'static str> {
@@ -30,14 +33,22 @@ pub async fn home_page() -> Html<&'static str> {
 }
 
 #[instrument(skip(state), err)]
-pub async fn mistakes(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
-    Ok(Json(state.db.lock().unwrap().mistaken_words()?))
+pub async fn all_mistakes(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
+    Ok(Json(state.db.lock().unwrap().all_mistakes()?))
+}
+
+#[instrument(skip(state), err)]
+pub async fn mistakes(
+    State(state): State<AppState>,
+    Path(name): Path<String>,
+) -> Result<impl IntoResponse, AppError> {
+    Ok(Json(state.db.lock().unwrap().mistakes(&name)?))
 }
 
 #[instrument(skip(state), err)]
 pub async fn report_mistake(
     State(state): State<AppState>,
-    Json(payload): Json<ReportMistake>,
+    Json(payload): Json<MistakeReport>,
 ) -> Result<impl IntoResponse, AppError> {
     Ok(Json(state.db.lock().unwrap().report_mistake(&payload)?))
 }
