@@ -8,9 +8,12 @@ use crate::api::AppState;
 use hyper::Method;
 use std::net::SocketAddr;
 use tower_http::cors::{Any, CorsLayer};
+use tracing_subscriber::fmt::init;
 
 #[tokio::main]
 async fn main() {
+    init();
+
     let cors = CorsLayer::new()
         .allow_origin(Any)
         .allow_headers(Any)
