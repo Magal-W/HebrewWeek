@@ -8,7 +8,7 @@ use crate::types::{CountedMistake, MistakeReport, PersonMistake, PersonMistakes}
 pub(crate) struct HebrewDb(Connection);
 
 impl HebrewDb {
-    const DB_PATH: &str = "hebrew.db";
+    const DB_PATH: &'static str = "hebrew.db";
 
     pub fn new() -> Result<Self> {
         let db = Connection::open(Self::DB_PATH).context("Failed to connect to db")?;
