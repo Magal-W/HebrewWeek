@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import Table from "react-bootstrap/Table";
-import { Col, Container, Row } from "react-bootstrap";
+import { Col, Container, Form, Row } from "react-bootstrap";
 import Button from "react-bootstrap/Button";
 import "./types.d.ts";
 
@@ -32,30 +32,42 @@ function ReportMistake() {
 
   return (
     <>
-      <h2>Report a use of English</h2>
-      <form onSubmit={handleSubmit}>
-        <label htmlFor="name">
-          Name:
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => {
-              setName(e.target.value);
-            }}
-          />
-        </label>
-        <label htmlFor="mistake">
-          Mistake:
-          <input
-            type="text"
-            value={reportedMistake}
-            onChange={(e) => {
-              setReportedMistake(e.target.value);
-            }}
-          />
-        </label>
-        <Button variant="primary">Submit</Button>
-      </form>
+      <Row>
+        <Col>
+          <h2 className="text-center">Report a use of English</h2>
+        </Col>
+      </Row>
+      <Form noValidate onSubmit={handleSubmit}>
+        <Row className="mb-3">
+          <Form.Group as={Col} controlId="formName">
+            <Form.Label>Name</Form.Label>
+            <Form.Control
+              type="text"
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value);
+              }}
+            />
+          </Form.Group>
+          <Form.Group as={Col} controlId="formMistake">
+            <Form.Label>Mistake</Form.Label>
+            <Form.Control
+              type="text"
+              value={reportedMistake}
+              onChange={(e) => {
+                setReportedMistake(e.target.value);
+              }}
+            />
+          </Form.Group>
+        </Row>
+        <Row className="justify-content-md-center">
+          <Col md="auto">
+            <Button variant="primary" type="submit">
+              Submit
+            </Button>
+          </Col>
+        </Row>
+      </Form>
       <p>
         {mistake === null
           ? ""
@@ -100,19 +112,11 @@ function PersonMistakesTable({
   );
 }
 
-export default function App() {
-  const [mistakes, setMistakes] = useState<PersonMistakes[]>([]);
-
-  useEffect(() => {
-    fetch("http://localhost:3000/mistakes")
-      .then((res) => res.json())
-      .then((mistakes: PersonMistakes[]) => setMistakes(mistakes));
-  }, []);
-
+function MistakesPane({ mistakes }: { mistakes: PersonMistakes[] }) {
   return (
     <div>
       <Container>
-        <Row className="justify-content-md-center">
+        <Row>
           <Col>
             <ReportMistake />
           </Col>
@@ -127,4 +131,16 @@ export default function App() {
       </Container>
     </div>
   );
+}
+
+export default function App() {
+  const [mistakes, setMistakes] = useState<PersonMistakes[]>([]);
+
+  useEffect(() => {
+    fetch("http://localhost:3000/mistakes")
+      .then((res) => res.json())
+      .then((mistakes: PersonMistakes[]) => setMistakes(mistakes));
+  }, []);
+
+  return <MistakesPane mistakes={mistakes} />;
 }
