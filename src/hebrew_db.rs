@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::{ensure, Context, Result};
 use itertools::Itertools;
 use rusqlite::{named_params, Connection};
 
@@ -64,27 +64,22 @@ impl HebrewDb {
     pub fn report_mistake(&self, report: &MistakeReport) -> Result<PersonMistake> {
         let name = &report.name;
         let mistake = &report.mistake;
+        let params = named_params! {":name": name, ":mistake": mistake};
+
+        let mut upsert_statement = self.0.prepare(
+            "INSERT INTO Mistakes VALUES(:name, :mistake, 1)
+             ON CONFLICT(Name, Mistake) DO UPDATE SET Count = Count + 1",
+        )?;
+
+        let rows_changed = upsert_statement.execute(params)?;
+        ensure!(
+            rows_changed == 1,
+            format!("Failed to report mistake {mistake} of {name}")
+        );
+
         let mut select_stmt = self
             .0
             .prepare("SELECT * FROM Mistakes WHERE Name = :name AND Mistake = :mistake")?;
-
-        let params = named_params! {":name": name, ":mistake": mistake};
-        let mut statement = if select_stmt.exists(params)? {
-            self.0.prepare(
-                "UPDATE Mistakes SET Count = Count + 1 WHERE Name = :name AND Mistake = :mistake",
-            )?
-        } else {
-            self.0
-                .prepare("INSERT INTO Mistakes VALUES(:name, :mistake, 1)")?
-        };
-
-        let rows_changed = statement.execute(params)?;
-        if rows_changed != 1 {
-            return Err(anyhow!(format!(
-                "Failed to report mistake {mistake} of {name}"
-            )));
-        }
-
         select_stmt
             .query_row(params, |row| {
                 Ok(PersonMistake {
@@ -105,16 +100,14 @@ impl HebrewDb {
             [
                 ("Name", DbFieldType::String),
                 ("Mistake", DbFieldType::String),
-                ("Count", DbFieldType::Int),
             ],
+            [("Count", DbFieldType::Int)],
         )?;
         Self::create_table(
             &self.0,
             "Translations",
-            [
-                ("English", DbFieldType::String),
-                ("Hebrew", DbFieldType::String),
-            ],
+            [("English", DbFieldType::String)],
+            [("Hebrew", DbFieldType::String)],
         )?;
         Self::create_table(
             &self.0,
@@ -123,21 +116,35 @@ impl HebrewDb {
                 ("English", DbFieldType::String),
                 ("Hebrew", DbFieldType::String),
             ],
+            [],
         )?;
         Ok(())
     }
 
-    fn create_table<I: IntoIterator<Item = (&'static str, DbFieldType)>>(
+    fn create_table<
+        IUnique: IntoIterator<Item = (&'static str, DbFieldType)> + Copy,
+        IOther: IntoIterator<Item = (&'static str, DbFieldType)>,
+    >(
         db: &Connection,
         table_name: &str,
-        fields: I,
+        unique_fields: IUnique,
+        other_fields: IOther,
     ) -> Result<()> {
-        let fields = fields
+        let fields = unique_fields
             .into_iter()
+            .chain(other_fields.into_iter())
             .map(|(name, field_type)| format!("{} {}", name, field_type.to_type_string()))
             .collect::<Vec<String>>()
             .join(",\n");
-        let table_query = format!("CREATE TABLE IF NOT EXISTS {table_name} ({fields});");
+        let constraint = format!(
+            "CONSTRAINT u UNIQUE({})",
+            unique_fields
+                .into_iter()
+                .map(|(name, _)| name.to_owned())
+                .join(", ")
+        );
+        let table_query =
+            format!("CREATE TABLE IF NOT EXISTS {table_name} ({fields}, {constraint});");
         db.execute(&table_query, ())
             .context(format!("Failed creating table {table_name}"))?;
         Ok(())
