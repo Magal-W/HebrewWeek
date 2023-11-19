@@ -2,7 +2,11 @@ use anyhow::{ensure, Context, Result};
 use itertools::Itertools;
 use rusqlite::{named_params, Connection};
 
-use crate::types::{CountedMistake, MistakeReport, PersonMistake, PersonMistakes};
+use crate::types::{CountedMistake, MistakeReport, PersonMistake, PersonMistakes, Translation};
+
+/// Represents a canonical representation (dictionary choice) that can be stored in "source-of-truth" tables
+#[derive(Debug)]
+struct CanonicalWord(pub String);
 
 #[derive(Debug)]
 pub(crate) struct HebrewDb(Connection);
@@ -61,7 +65,7 @@ impl HebrewDb {
         })
     }
 
-    pub fn report_mistake(&self, report: &MistakeReport) -> Result<PersonMistake> {
+    pub fn report_mistake(&self, report: MistakeReport) -> Result<PersonMistake> {
         let name = &report.name;
         let mistake = &report.mistake;
         let params = named_params! {":name": name, ":mistake": mistake};
@@ -93,6 +97,54 @@ impl HebrewDb {
             .map_err(|err| err.into())
     }
 
+    pub fn all_translations(&self) -> Result<Vec<Translation>> {
+        let mut statement = self.0.prepare("SELECT * FROM Translations")?;
+        let translations = statement
+            .query_map([], |row| {
+                Ok(Translation {
+                    english: row.get("English")?,
+                    hebrew: row.get("Hebrew")?,
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(translations)
+    }
+
+    pub fn add_translation(&self, translation: Translation) -> Result<()> {
+        ensure!(
+            self.0
+                .prepare("INSERT OR REPLACE INTO Translations VALUES(:english, :hebrew)")?
+                .execute([&translation.english, &translation.hebrew])?
+                == 1,
+            format!(
+                "Failed to add translation of {} as {}",
+                translation.english, translation.hebrew
+            )
+        );
+        Ok(())
+    }
+
+    pub fn translate(&self, english: &str) -> Result<Option<String>> {
+        let canonical = self.canonicalize(english)?;
+        match canonical {
+            Some(canonical) => self.translate_canonical(canonical),
+            None => Ok(None),
+        }
+    }
+
+    /// The canonical (he-he) and only(!) way to create a `CanonicalWord`
+    fn canonicalize(&self, word: &str) -> Result<Option<CanonicalWord>> {
+        match self
+            .0
+            .prepare("SELECT Canonical FROM CanonicalWords WHERE Word = :word")?
+            .query_row([word], |row| Ok(CanonicalWord(row.get("Canonical")?)))
+        {
+            Ok(canonical) => Ok(Some(canonical)),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(err) => Err(err.into()),
+        }
+    }
+
     fn create_tables(&self) -> Result<()> {
         Self::create_table(
             &self.0,
@@ -118,6 +170,12 @@ impl HebrewDb {
             ],
             [],
         )?;
+        Self::create_table(
+            &self.0,
+            "CanonicalWords",
+            [("Word", DbFieldType::String)],
+            [("Canonical", DbFieldType::String)],
+        )?;
         Ok(())
     }
 
@@ -132,7 +190,7 @@ impl HebrewDb {
     ) -> Result<()> {
         let fields = unique_fields
             .into_iter()
-            .chain(other_fields.into_iter())
+            .chain(other_fields)
             .map(|(name, field_type)| format!("{} {}", name, field_type.to_type_string()))
             .collect::<Vec<String>>()
             .join(",\n");
@@ -148,6 +206,18 @@ impl HebrewDb {
         db.execute(&table_query, ())
             .context(format!("Failed creating table {table_name}"))?;
         Ok(())
+    }
+
+    fn translate_canonical(&self, canonical: CanonicalWord) -> Result<Option<String>> {
+        match self
+            .0
+            .prepare("SELECT Hebrew FROM Translations WHERE English = :english")?
+            .query_row([canonical.0], |row| row.get(0))
+        {
+            Ok(translation) => Ok(Some(translation)),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(err) => Err(err.into()),
+        }
     }
 }
 

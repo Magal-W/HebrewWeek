@@ -3,19 +3,16 @@ use serde_derive::Serialize;
 use tsync::tsync;
 
 #[tsync]
-pub type Mistake = String;
-
-#[tsync]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MistakeReport {
     pub name: String,
-    pub mistake: Mistake,
+    pub mistake: String,
 }
 
 #[tsync]
 #[derive(Debug, Serialize)]
 pub struct CountedMistake {
-    pub mistake: Mistake,
+    pub mistake: String,
     pub count: u32,
 }
 
@@ -31,4 +28,11 @@ pub struct PersonMistake {
 pub struct PersonMistakes {
     pub name: String,
     pub counted_mistakes: Vec<CountedMistake>,
+}
+
+#[tsync]
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Translation {
+    pub english: String,
+    pub hebrew: String,
 }
