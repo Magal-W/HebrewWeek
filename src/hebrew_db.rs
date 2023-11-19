@@ -1,6 +1,6 @@
-use anyhow::{ensure, Context, Result};
+use anyhow::{anyhow, ensure, Context, Result};
 use itertools::Itertools;
-use rusqlite::{named_params, Connection};
+use rusqlite::{named_params, Connection, Error::QueryReturnedNoRows};
 
 use crate::types::{CountedMistake, MistakeReport, PersonMistake, PersonMistakes, Translation};
 
@@ -67,34 +67,12 @@ impl HebrewDb {
 
     pub fn report_mistake(&self, report: MistakeReport) -> Result<PersonMistake> {
         let name = &report.name;
-        let mistake = &report.mistake;
-        let params = named_params! {":name": name, ":mistake": mistake};
+        let mistake = self.canonicalize(&report.mistake)?;
 
-        let mut upsert_statement = self.0.prepare(
-            "INSERT INTO Mistakes VALUES(:name, :mistake, 1)
-             ON CONFLICT(Name, Mistake) DO UPDATE SET Count = Count + 1",
-        )?;
-
-        let rows_changed = upsert_statement.execute(params)?;
-        ensure!(
-            rows_changed == 1,
-            format!("Failed to report mistake {mistake} of {name}")
-        );
-
-        let mut select_stmt = self
-            .0
-            .prepare("SELECT * FROM Mistakes WHERE Name = :name AND Mistake = :mistake")?;
-        select_stmt
-            .query_row(params, |row| {
-                Ok(PersonMistake {
-                    name: name.to_owned(),
-                    counted_mistake: CountedMistake {
-                        mistake: mistake.to_owned(),
-                        count: row.get("Count")?,
-                    },
-                })
-            })
-            .map_err(|err| err.into())
+        match mistake {
+            Some(mistake) => self.report_mistake_canonical(mistake, name),
+            None => Err(unknown_word_err(&report.mistake)),
+        }
     }
 
     pub fn all_translations(&self) -> Result<Vec<Translation>> {
@@ -111,17 +89,11 @@ impl HebrewDb {
     }
 
     pub fn add_translation(&self, translation: Translation) -> Result<()> {
-        ensure!(
-            self.0
-                .prepare("INSERT OR REPLACE INTO Translations VALUES(:english, :hebrew)")?
-                .execute([&translation.english, &translation.hebrew])?
-                == 1,
-            format!(
-                "Failed to add translation of {} as {}",
-                translation.english, translation.hebrew
-            )
-        );
-        Ok(())
+        let canonical = self.canonicalize(&translation.english)?;
+        match canonical {
+            Some(canonical) => self.add_translation_canonical(canonical, &translation.hebrew),
+            None => Err(unknown_word_err(&translation.english)),
+        }
     }
 
     pub fn translate(&self, english: &str) -> Result<Option<String>> {
@@ -140,7 +112,7 @@ impl HebrewDb {
             .query_row([word], |row| Ok(CanonicalWord(row.get("Canonical")?)))
         {
             Ok(canonical) => Ok(Some(canonical)),
-            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(QueryReturnedNoRows) => Ok(None),
             Err(err) => Err(err.into()),
         }
     }
@@ -208,6 +180,52 @@ impl HebrewDb {
         Ok(())
     }
 
+    fn report_mistake_canonical(
+        &self,
+        mistake: CanonicalWord,
+        name: &str,
+    ) -> Result<PersonMistake> {
+        let mistake = mistake.0;
+        let params = named_params! {":name": name, ":mistake": mistake};
+
+        let mut upsert_statement = self.0.prepare(
+            "INSERT INTO Mistakes VALUES(:name, :mistake, 1)
+             ON CONFLICT(Name, Mistake) DO UPDATE SET Count = Count + 1",
+        )?;
+
+        let rows_changed = upsert_statement.execute(params)?;
+        ensure!(
+            rows_changed == 1,
+            format!("Failed to report mistake {mistake} of {name}")
+        );
+
+        let mut select_stmt = self
+            .0
+            .prepare("SELECT * FROM Mistakes WHERE Name = :name AND Mistake = :mistake")?;
+        select_stmt
+            .query_row(params, |row| {
+                Ok(PersonMistake {
+                    name: name.to_owned(),
+                    counted_mistake: CountedMistake {
+                        mistake: mistake.to_owned(),
+                        count: row.get("Count")?,
+                    },
+                })
+            })
+            .map_err(|err| err.into())
+    }
+
+    fn add_translation_canonical(&self, english: CanonicalWord, hebrew: &str) -> Result<()> {
+        ensure!(
+            self.0
+                .prepare("INSERT OR REPLACE INTO Translations VALUES(:english, :hebrew)")?
+                .execute([&english.0, hebrew])?
+                == 1,
+            format!("Failed to add translation of {} as {}", english.0, hebrew)
+        );
+        Ok(())
+    }
+
     fn translate_canonical(&self, canonical: CanonicalWord) -> Result<Option<String>> {
         match self
             .0
@@ -215,10 +233,14 @@ impl HebrewDb {
             .query_row([canonical.0], |row| row.get(0))
         {
             Ok(translation) => Ok(Some(translation)),
-            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(QueryReturnedNoRows) => Ok(None),
             Err(err) => Err(err.into()),
         }
     }
+}
+
+fn unknown_word_err(word: &str) -> anyhow::Error {
+    anyhow!(format!("{} is an unknown word!", word))
 }
 
 #[derive(Debug, Clone, Copy)]
