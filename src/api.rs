@@ -3,7 +3,7 @@ use crate::hebrew_db::HebrewDb;
 use crate::types::{MistakeReport, Translation};
 use axum::extract::Path;
 use axum::response::IntoResponse;
-use axum::{extract::State, response::Html, Json};
+use axum::{extract::State, Json};
 use axum::{routing::get, Router};
 use std::sync::{Arc, Mutex};
 use tracing::instrument;
@@ -23,15 +23,19 @@ impl AppState {
 
 pub fn routes() -> Router<AppState> {
     Router::new()
-        .route("/", get(home_page))
         .route("/mistakes", get(all_mistakes).post(report_mistake))
         .route("/mistakes/:name", get(mistakes))
         .route("/translations", get(all_translations).post(add_translation))
         .route("/translate/:english", get(translate))
+        .route("/known/:word", get(is_known_word))
 }
 
-pub async fn home_page() -> Html<&'static str> {
-    Html("<h1>Hello, World!</h1>")
+#[instrument(skip(state), err)]
+pub async fn is_known_word(
+    State(state): State<AppState>,
+    Path(word): Path<String>,
+) -> Result<impl IntoResponse, AppError> {
+    Ok(Json(state.db.lock().unwrap().is_known_word(&word)?))
 }
 
 #[instrument(skip(state), err)]

@@ -22,6 +22,10 @@ impl HebrewDb {
         Ok(hebrew_db)
     }
 
+    pub fn is_known_word(&self, word: &str) -> Result<bool> {
+        Ok(self.canonicalize(word)?.is_some())
+    }
+
     pub fn all_mistakes(&self) -> Result<Vec<PersonMistakes>> {
         let mut statement = self.0.prepare("SELECT * FROM Mistakes ORDER BY Name")?;
         let mistakes_group = statement
