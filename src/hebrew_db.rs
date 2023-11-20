@@ -2,7 +2,10 @@ use anyhow::{anyhow, ensure, Context, Result};
 use itertools::Itertools;
 use rusqlite::{named_params, Connection, Error::QueryReturnedNoRows};
 
-use crate::types::{CountedMistake, MistakeReport, PersonMistake, PersonMistakes, Translation};
+use crate::types::{
+    CanonicalRequest, CountedMistake, MistakeReport, MistakeSuggestion, PersonMistake,
+    PersonMistakes, Translation, TranslationSuggestion,
+};
 
 /// Represents a canonical representation (dictionary choice) that can be stored in "source-of-truth" tables
 #[derive(Debug)]
@@ -79,6 +82,20 @@ impl HebrewDb {
         }
     }
 
+    pub fn suggest_mistake(&self, suggestion: MistakeSuggestion) -> Result<i64> {
+        self.0
+            .prepare("INSERT INTO MistakesSuggestions VALUES(:name, :mistake, :context)")?
+            .insert([suggestion.name, suggestion.mistake, suggestion.context])
+            .map_err(|err| err.into())
+    }
+
+    pub fn suggest_translation(&self, suggestion: TranslationSuggestion) -> Result<i64> {
+        self.0
+            .prepare("INSERT INTO TranslationsSuggestion VALUES(:english, :hebrew)")?
+            .insert([suggestion.english, suggestion.hebrew])
+            .map_err(|err| err.into())
+    }
+
     pub fn all_translations(&self) -> Result<Vec<Translation>> {
         let mut statement = self.0.prepare("SELECT * FROM Translations")?;
         let translations = statement
@@ -108,6 +125,72 @@ impl HebrewDb {
         }
     }
 
+    pub fn discard_mistake_suggestion(&self, suggestion_id: i64) -> Result<()> {
+        ensure!(
+            self.0
+                .prepare("DELETE FROM MistakesSuggestions WHERE ROWID = :id")?
+                .execute([suggestion_id])?
+                == 1,
+            format!("Failed to delete mistake suggestion with id {suggestion_id}")
+        );
+        Ok(())
+    }
+
+    pub fn discard_translation_suggestion(&self, suggestion_id: i64) -> Result<()> {
+        ensure!(
+            self.0
+                .prepare("DELETE FROM TranslationsSuggestions WHERE ROWID = :id")?
+                .execute([suggestion_id])?
+                == 1,
+            format!("Failed to delete mistake suggestion with id {suggestion_id}")
+        );
+        Ok(())
+    }
+
+    pub fn all_mistake_suggestions(&self) -> Result<Vec<MistakeSuggestion>> {
+        self.0
+            .prepare("SELECT ROWID,* FROM MistakesSuggestions")?
+            .query_map([], |row| {
+                Ok(MistakeSuggestion {
+                    id: row.get("ROWID")?,
+                    name: row.get("Name")?,
+                    mistake: row.get("Mistake")?,
+                    context: row.get("Context")?,
+                })
+            })?
+            .try_collect()
+            .map_err(|err| err.into())
+    }
+
+    pub fn all_translation_suggestions(&self) -> Result<Vec<TranslationSuggestion>> {
+        self.0
+            .prepare("SELECT ROWID,* FROM TranslationsSuggestions")?
+            .query_map([], |row| {
+                Ok(TranslationSuggestion {
+                    id: row.get("ROWID")?,
+                    english: row.get("English")?,
+                    hebrew: row.get("Hebrew")?,
+                })
+            })?
+            .try_collect()
+            .map_err(|err| err.into())
+    }
+
+    pub fn add_canonical(&self, request: CanonicalRequest) -> Result<()> {
+        let rows_changed = self
+            .0
+            .prepare("INSERT OR REPLACE INTO CanonicalWords VALUES(:word, :canonical)")?
+            .execute([&request.word, &request.word])?;
+        ensure!(
+            rows_changed == 1 || rows_changed == 2,
+            format!(
+                "Couldn't insert canonicalization of {} as {}",
+                request.word, request.canonical
+            )
+        );
+        Ok(())
+    }
+
     /// The canonical (he-he) and only(!) way to create a `CanonicalWord`
     fn canonicalize(&self, word: &str) -> Result<Option<CanonicalWord>> {
         match self
@@ -130,6 +213,16 @@ impl HebrewDb {
                 ("Mistake", DbFieldType::String),
             ],
             [("Count", DbFieldType::Int)],
+        )?;
+        Self::create_table(
+            &self.0,
+            "MistakesSuggestions",
+            [],
+            [
+                ("Name", DbFieldType::String),
+                ("Mistake", DbFieldType::String),
+                ("Context", DbFieldType::String),
+            ],
         )?;
         Self::create_table(
             &self.0,
@@ -170,15 +263,19 @@ impl HebrewDb {
             .map(|(name, field_type)| format!("{} {}", name, field_type.to_type_string()))
             .collect::<Vec<String>>()
             .join(",\n");
-        let constraint = format!(
-            "CONSTRAINT u UNIQUE({})",
-            unique_fields
-                .into_iter()
-                .map(|(name, _)| name.to_owned())
-                .join(", ")
-        );
+        let constraint = if unique_fields.into_iter().peekable().peek().is_some() {
+            format!(
+                ", CONSTRAINT u UNIQUE({})",
+                unique_fields
+                    .into_iter()
+                    .map(|(name, _)| name.to_owned())
+                    .join(", ")
+            )
+        } else {
+            String::from("")
+        };
         let table_query =
-            format!("CREATE TABLE IF NOT EXISTS {table_name} ({fields}, {constraint});");
+            format!("CREATE TABLE IF NOT EXISTS {table_name} ({fields}{constraint});");
         db.execute(&table_query, ())
             .context(format!("Failed creating table {table_name}"))?;
         Ok(())
@@ -220,11 +317,12 @@ impl HebrewDb {
     }
 
     fn add_translation_canonical(&self, english: CanonicalWord, hebrew: &str) -> Result<()> {
+        let rows_changed = self
+            .0
+            .prepare("INSERT OR REPLACE INTO Translations VALUES(:english, :hebrew)")?
+            .execute([&english.0, hebrew])?;
         ensure!(
-            self.0
-                .prepare("INSERT OR REPLACE INTO Translations VALUES(:english, :hebrew)")?
-                .execute([&english.0, hebrew])?
-                == 1,
+            rows_changed == 1 || rows_changed == 2,
             format!("Failed to add translation of {} as {}", english.0, hebrew)
         );
         Ok(())

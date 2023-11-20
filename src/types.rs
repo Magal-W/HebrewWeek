@@ -10,6 +10,15 @@ pub struct MistakeReport {
 }
 
 #[tsync]
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MistakeSuggestion {
+    pub id: i64,
+    pub name: String,
+    pub mistake: String,
+    pub context: String,
+}
+
+#[tsync]
 #[derive(Debug, Serialize)]
 pub struct CountedMistake {
     pub mistake: String,
@@ -35,4 +44,19 @@ pub struct PersonMistakes {
 pub struct Translation {
     pub english: String,
     pub hebrew: String,
+}
+
+#[tsync]
+#[derive(Debug, Deserialize, Serialize)]
+pub struct TranslationSuggestion {
+    pub id: i64,
+    pub english: String,
+    pub hebrew: String,
+}
+
+#[tsync]
+#[derive(Debug, Deserialize)]
+pub struct CanonicalRequest {
+    pub word: String,
+    pub canonical: String,
 }
