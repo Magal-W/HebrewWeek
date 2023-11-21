@@ -5,7 +5,6 @@ use crate::types::{
     TranslationSuggestion,
 };
 use axum::extract::Path;
-use axum::response::IntoResponse;
 use axum::routing::{delete, get, post};
 use axum::Router;
 use axum::{extract::State, Json};
@@ -27,6 +26,7 @@ impl AppState {
 
 pub fn routes() -> Router<AppState> {
     Router::new()
+        .route("/participants", get(participants).post(add_participant))
         .route("/mistakes", get(all_mistakes).post(report_mistake))
         .route("/mistakes/:name", get(mistakes))
         .route("/translations", get(all_translations).post(add_translation))
@@ -166,5 +166,19 @@ pub async fn add_canonical(
     Json(payload): Json<CanonicalRequest>,
 ) -> Result<(), AppError> {
     state.db.lock().unwrap().add_canonical(payload)?;
+    Ok(())
+}
+
+#[instrument(skip(state), err)]
+pub async fn participants(State(state): State<AppState>) -> Result<Json<Vec<String>>, AppError> {
+    Ok(Json(state.db.lock().unwrap().participants()?))
+}
+
+#[instrument(skip(state), err)]
+pub async fn add_participant(
+    State(state): State<AppState>,
+    Json(payload): Json<String>,
+) -> Result<(), AppError> {
+    state.db.lock().unwrap().add_participant(&payload)?;
     Ok(())
 }

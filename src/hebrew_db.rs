@@ -29,6 +29,21 @@ impl HebrewDb {
         Ok(self.canonicalize(word)?.is_some())
     }
 
+    pub fn participants(&self) -> Result<Vec<String>> {
+        Ok(self
+            .0
+            .prepare("SELECT Name FROM Participants")?
+            .query_map([], |row| row.get("Name"))?
+            .collect::<Result<Vec<_>, _>>()?)
+    }
+
+    pub fn add_participant(&self, name: &str) -> Result<()> {
+        self.0
+            .prepare("INSERT INTO Particiapnts VALUES(:name)")?
+            .insert([name])?;
+        Ok(())
+    }
+
     pub fn all_mistakes(&self) -> Result<Vec<PersonMistakes>> {
         let mut statement = self.0.prepare("SELECT * FROM Mistakes ORDER BY Name")?;
         let mistakes_group = statement
@@ -205,6 +220,7 @@ impl HebrewDb {
     }
 
     fn create_tables(&self) -> Result<()> {
+        Self::create_table(&self.0, "Participants", [("Name", DbFieldType::String)], [])?;
         Self::create_table(
             &self.0,
             "Mistakes",
