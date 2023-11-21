@@ -1,14 +1,18 @@
 /* This file is generated and managed by tsync */
 
-type Mistake = string
-
 interface MistakeReport {
   name: string;
-  mistake: Mistake;
+  mistake: string;
+}
+
+interface MistakeSuggestion {
+  name: string;
+  mistake: string;
+  context: string;
 }
 
 interface CountedMistake {
-  mistake: Mistake;
+  mistake: string;
   count: number;
 }
 
@@ -20,4 +24,9 @@ interface PersonMistake {
 interface PersonMistakes {
   name: string;
   counted_mistakes: Array<CountedMistake>;
+}
+
+interface Translation {
+  english: string;
+  hebrew: string;
 }
