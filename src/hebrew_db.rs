@@ -117,11 +117,11 @@ impl HebrewDb {
         }
     }
 
-    pub fn translate(&self, english: &str) -> Result<Option<String>> {
+    pub fn translate(&self, english: &str) -> Result<Vec<String>> {
         let canonical = self.canonicalize(english)?;
         match canonical {
             Some(canonical) => self.translate_canonical(canonical),
-            None => Ok(None),
+            None => Ok(vec![]),
         }
     }
 
@@ -227,8 +227,11 @@ impl HebrewDb {
         Self::create_table(
             &self.0,
             "Translations",
-            [("English", DbFieldType::String)],
-            [("Hebrew", DbFieldType::String)],
+            [
+                ("English", DbFieldType::String),
+                ("Hebrew", DbFieldType::String),
+            ],
+            [],
         )?;
         Self::create_table(
             &self.0,
@@ -328,16 +331,12 @@ impl HebrewDb {
         Ok(())
     }
 
-    fn translate_canonical(&self, canonical: CanonicalWord) -> Result<Option<String>> {
-        match self
+    fn translate_canonical(&self, canonical: CanonicalWord) -> Result<Vec<String>> {
+        Ok(self
             .0
             .prepare("SELECT Hebrew FROM Translations WHERE English = :english")?
-            .query_row([canonical.0], |row| row.get(0))
-        {
-            Ok(translation) => Ok(Some(translation)),
-            Err(QueryReturnedNoRows) => Ok(None),
-            Err(err) => Err(err.into()),
-        }
+            .query_map([canonical.0], |row| row.get(0))?
+            .collect::<Result<Vec<_>, _>>()?)
     }
 }
 

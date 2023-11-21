@@ -1,7 +1,8 @@
 use crate::error::AppError;
 use crate::hebrew_db::HebrewDb;
 use crate::types::{
-    CanonicalRequest, MistakeReport, MistakeSuggestion, Translation, TranslationSuggestion,
+    CanonicalRequest, MistakeReport, MistakeSuggestion, PersonMistake, PersonMistakes, Translation,
+    TranslationSuggestion,
 };
 use axum::extract::Path;
 use axum::response::IntoResponse;
@@ -50,12 +51,14 @@ pub fn routes() -> Router<AppState> {
 pub async fn is_known_word(
     State(state): State<AppState>,
     Path(word): Path<String>,
-) -> Result<impl IntoResponse, AppError> {
+) -> Result<Json<bool>, AppError> {
     Ok(Json(state.db.lock().unwrap().is_known_word(&word)?))
 }
 
 #[instrument(skip(state), err)]
-pub async fn all_mistakes(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
+pub async fn all_mistakes(
+    State(state): State<AppState>,
+) -> Result<Json<Vec<PersonMistakes>>, AppError> {
     Ok(Json(state.db.lock().unwrap().all_mistakes()?))
 }
 
@@ -63,7 +66,7 @@ pub async fn all_mistakes(State(state): State<AppState>) -> Result<impl IntoResp
 pub async fn mistakes(
     State(state): State<AppState>,
     Path(name): Path<String>,
-) -> Result<impl IntoResponse, AppError> {
+) -> Result<Json<PersonMistakes>, AppError> {
     Ok(Json(state.db.lock().unwrap().mistakes(&name)?))
 }
 
@@ -71,7 +74,7 @@ pub async fn mistakes(
 pub async fn report_mistake(
     State(state): State<AppState>,
     Json(payload): Json<MistakeReport>,
-) -> Result<impl IntoResponse, AppError> {
+) -> Result<Json<PersonMistake>, AppError> {
     Ok(Json(state.db.lock().unwrap().report_mistake(payload)?))
 }
 
@@ -79,14 +82,14 @@ pub async fn report_mistake(
 pub async fn suggest_mistake(
     State(state): State<AppState>,
     Json(payload): Json<MistakeSuggestion>,
-) -> Result<impl IntoResponse, AppError> {
+) -> Result<Json<i64>, AppError> {
     Ok(Json(state.db.lock().unwrap().suggest_mistake(payload)?))
 }
 
 #[instrument(skip(state), err)]
 pub async fn all_translations(
     State(state): State<AppState>,
-) -> Result<impl IntoResponse, AppError> {
+) -> Result<Json<Vec<Translation>>, AppError> {
     Ok(Json(state.db.lock().unwrap().all_translations()?))
 }
 
@@ -94,7 +97,7 @@ pub async fn all_translations(
 pub async fn add_translation(
     State(state): State<AppState>,
     Json(payload): Json<Translation>,
-) -> Result<impl IntoResponse, AppError> {
+) -> Result<(), AppError> {
     state.db.lock().unwrap().add_translation(payload)?;
     Ok(())
 }
@@ -103,7 +106,7 @@ pub async fn add_translation(
 pub async fn suggest_translation(
     State(state): State<AppState>,
     Json(payload): Json<TranslationSuggestion>,
-) -> Result<impl IntoResponse, AppError> {
+) -> Result<Json<i64>, AppError> {
     Ok(Json(state.db.lock().unwrap().suggest_translation(payload)?))
 }
 
@@ -111,7 +114,7 @@ pub async fn suggest_translation(
 pub async fn translate(
     State(state): State<AppState>,
     Path(english): Path<String>,
-) -> Result<impl IntoResponse, AppError> {
+) -> Result<Json<Vec<String>>, AppError> {
     Ok(Json(state.db.lock().unwrap().translate(&english)?))
 }
 
@@ -119,7 +122,7 @@ pub async fn translate(
 pub async fn discard_mistake_suggestion(
     State(state): State<AppState>,
     Json(payload): Json<i64>,
-) -> Result<impl IntoResponse, AppError> {
+) -> Result<(), AppError> {
     state
         .db
         .lock()
@@ -132,7 +135,7 @@ pub async fn discard_mistake_suggestion(
 pub async fn discard_translation_suggestion(
     State(state): State<AppState>,
     Json(payload): Json<i64>,
-) -> Result<impl IntoResponse, AppError> {
+) -> Result<(), AppError> {
     state
         .db
         .lock()
@@ -144,14 +147,14 @@ pub async fn discard_translation_suggestion(
 #[instrument(skip(state), err)]
 pub async fn all_mistake_suggestions(
     State(state): State<AppState>,
-) -> Result<impl IntoResponse, AppError> {
+) -> Result<Json<Vec<MistakeSuggestion>>, AppError> {
     Ok(Json(state.db.lock().unwrap().all_mistake_suggestions()?))
 }
 
 #[instrument(skip(state), err)]
 pub async fn all_translation_suggestions(
     State(state): State<AppState>,
-) -> Result<impl IntoResponse, AppError> {
+) -> Result<Json<Vec<TranslationSuggestion>>, AppError> {
     Ok(Json(
         state.db.lock().unwrap().all_translation_suggestions()?,
     ))
@@ -161,7 +164,7 @@ pub async fn all_translation_suggestions(
 pub async fn add_canonical(
     State(state): State<AppState>,
     Json(payload): Json<CanonicalRequest>,
-) -> Result<impl IntoResponse, AppError> {
+) -> Result<(), AppError> {
     state.db.lock().unwrap().add_canonical(payload)?;
     Ok(())
 }
