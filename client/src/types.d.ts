@@ -6,6 +6,7 @@ interface MistakeReport {
 }
 
 interface MistakeSuggestion {
+  id: number;
   name: string;
   mistake: string;
   context: string;
@@ -29,4 +30,15 @@ interface PersonMistakes {
 interface Translation {
   english: string;
   hebrew: string;
+}
+
+interface TranslationSuggestion {
+  id: number;
+  english: string;
+  hebrew: string;
+}
+
+interface CanonicalRequest {
+  word: string;
+  canonical: string;
 }

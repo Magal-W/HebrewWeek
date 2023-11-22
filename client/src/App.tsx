@@ -6,23 +6,28 @@ import MistakesPane from "./MistakesPane.tsx";
 
 function TranslationsPane({ translations }: { translations: Translation[] }) {}
 
-async function getAllMistakes(): Promise<PersonMistakes[]> {
-  const response = await fetch("http://localhost:3000/mistakes");
+// async function getAllMistakes(): Promise<PersonMistakes[]> {
+//   const response = await fetch("http://localhost:3000/mistakes");
+//   return await response.json();
+// }
+
+async function getAllParticipants(): Promise<string[]> {
+  const response = await fetch("http://localhost:3000/participants");
   return await response.json();
 }
 
 export default function App() {
-  const [mistakes, setMistakes] = useState<PersonMistakes[]>([]);
+  const [names, setNames] = useState<string[]>([]);
 
   useEffect(() => {
-    getAllMistakes().then((res) => setMistakes(res));
+    getAllParticipants().then((res) => setNames(res));
   }, []);
 
   return (
     <div>
-      <Tabs defaultActiveKey="mistakes" id="test-tabs">
-        <Tab eventKey="mistakes" title="Mistakes">
-          <MistakesPane mistakes={mistakes} />
+      <Tabs defaultActiveKey="names" id="test-tabs">
+        <Tab eventKey="names" title="Mistakes">
+          <MistakesPane names={names} />
         </Tab>
         <Tab eventKey="test" title="Test">
           Test

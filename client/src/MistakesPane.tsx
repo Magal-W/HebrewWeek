@@ -1,5 +1,13 @@
 import { useState } from "react";
-import { Button, Col, Container, Form, Row, Table } from "react-bootstrap";
+import {
+  Accordion,
+  Button,
+  Col,
+  Container,
+  Form,
+  Row,
+  Table,
+} from "react-bootstrap";
 
 async function reportMistake(report: MistakeReport): Promise<PersonMistake> {
   const response = await fetch("http://localhost:3000/mistakes", {
@@ -7,6 +15,11 @@ async function reportMistake(report: MistakeReport): Promise<PersonMistake> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(report),
   });
+  return await response.json();
+}
+
+async function getMistakes(name: string): Promise<PersonMistakes> {
+  const response = await fetch(`http://localhost:3000/mistakes/${name}`);
   return await response.json();
 }
 
@@ -73,6 +86,28 @@ function ReportMistake() {
   );
 }
 
+function ParticipantMistakesAccordion({ name }: { name: string }) {
+  const [mistakes, setMistakes] = useState<PersonMistakes>({
+    name: name,
+    counted_mistakes: [],
+  });
+
+  async function handleEnter(e) {
+    setMistakes(await getMistakes(name));
+  }
+
+  return (
+    <Accordion>
+      <Accordion.Item eventKey="0">
+        <Accordion.Header>{name}</Accordion.Header>
+        <Accordion.Body onEnter={handleEnter}>
+          <PersonMistakesTable personMistakes={mistakes} />
+        </Accordion.Body>
+      </Accordion.Item>
+    </Accordion>
+  );
+}
+
 function PersonMistakesTable({
   personMistakes,
 }: {
@@ -81,11 +116,6 @@ function PersonMistakesTable({
   return (
     <Table striped bordered hover size="sm">
       <thead>
-        <tr>
-          <th colSpan={2} className="text-center">
-            {personMistakes.name}
-          </th>
-        </tr>
         <tr>
           <th className="text-center">Mistake</th>
           <th className="text-center">Count</th>
@@ -103,11 +133,7 @@ function PersonMistakesTable({
   );
 }
 
-export default function MistakesPane({
-  mistakes,
-}: {
-  mistakes: PersonMistakes[];
-}) {
+export default function MistakesPane({ names }: { names: string[] }) {
   return (
     <div>
       <Container>
@@ -116,10 +142,10 @@ export default function MistakesPane({
             <ReportMistake />
           </Col>
         </Row>
-        <Row>
-          {mistakes.map((mistake) => (
-            <Col key={mistake.name}>
-              <PersonMistakesTable personMistakes={mistake} />
+        <Row xs={2} md={4} lg={7}>
+          {names.map((name) => (
+            <Col key={name}>
+              <ParticipantMistakesAccordion name={name} />
             </Col>
           ))}
         </Row>
