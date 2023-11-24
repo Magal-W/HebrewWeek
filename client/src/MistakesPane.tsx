@@ -86,20 +86,28 @@ function ReportMistake() {
   );
 }
 
-function ParticipantMistakesAccordion({ name }: { name: string }) {
+function ParticipantMistakesAccordion({
+  name,
+  activeKeys,
+  handleSelect: onSelect,
+}: {
+  name: string;
+  activeKeys: string[];
+  handleSelect: (key: string) => () => void;
+}) {
   const [mistakes, setMistakes] = useState<PersonMistakes>({
     name: name,
     counted_mistakes: [],
   });
 
-  async function handleEnter(e) {
+  async function handleEnter() {
     setMistakes(await getMistakes(name));
   }
 
   return (
-    <Accordion>
-      <Accordion.Item eventKey="0">
-        <Accordion.Header>{name}</Accordion.Header>
+    <Accordion activeKey={activeKeys}>
+      <Accordion.Item eventKey={name}>
+        <Accordion.Header onClick={onSelect(name)}>{name}</Accordion.Header>
         <Accordion.Body onEnter={handleEnter}>
           <PersonMistakesTable personMistakes={mistakes} />
         </Accordion.Body>
@@ -133,21 +141,53 @@ function PersonMistakesTable({
   );
 }
 
+function ParticipantsView({ names }: { names: string[] }) {
+  const [activeKeys, setActiveKeys] = useState<string[]>([]);
+
+  function handleSelect(key: string): () => void {
+    return () => {
+      if (activeKeys.includes(key)) {
+        setActiveKeys(activeKeys.filter((value) => value !== key));
+      } else {
+        setActiveKeys(activeKeys.concat([key]));
+      }
+    };
+  }
+
+  return (
+    <>
+      <Row xs={2} md={5} lg={8}>
+        {names.map((name) => (
+          <Col key={name}>
+            <ParticipantMistakesAccordion
+              name={name}
+              activeKeys={activeKeys}
+              handleSelect={handleSelect}
+            />
+          </Col>
+        ))}
+      </Row>
+      <Row className="justify-content-md-center">
+        <Col md="auto">
+          <Button onClick={() => setActiveKeys(names)}>Expand All</Button>
+        </Col>
+        <Col md="auto">
+          <Button onClick={() => setActiveKeys([])}>Collapse All</Button>
+        </Col>
+      </Row>
+    </>
+  );
+}
+
 export default function MistakesPane({ names }: { names: string[] }) {
   return (
     <div>
       <Container>
+        <ParticipantsView names={names} />
         <Row>
           <Col>
             <ReportMistake />
           </Col>
-        </Row>
-        <Row xs={2} md={4} lg={7}>
-          {names.map((name) => (
-            <Col key={name}>
-              <ParticipantMistakesAccordion name={name} />
-            </Col>
-          ))}
         </Row>
       </Container>
     </div>
