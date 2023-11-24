@@ -4,8 +4,6 @@ import { Tab, Tabs } from "react-bootstrap";
 import "./types.d.ts";
 import MistakesPane from "./MistakesPane.tsx";
 
-function TranslationsPane({ translations }: { translations: Translation[] }) {}
-
 // async function getAllMistakes(): Promise<PersonMistakes[]> {
 //   const response = await fetch("http://localhost:3000/mistakes");
 //   return await response.json();
@@ -24,7 +22,7 @@ export default function App() {
   }, []);
 
   return (
-    <div>
+    <div style={{ display: "flex", flexDirection: "column" }}>
       <Tabs defaultActiveKey="names" id="test-tabs">
         <Tab eventKey="names" title="Mistakes">
           <MistakesPane names={names} />
@@ -33,6 +31,10 @@ export default function App() {
           Test
         </Tab>
       </Tabs>
+      <footer style={{ marginBottom: "auto" }}>
+        <hr></hr>
+        <p>The official Hebrew Week™ portal by Magal Weinberger</p>
+      </footer>
     </div>
   );
 }

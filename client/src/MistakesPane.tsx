@@ -5,17 +5,17 @@ import {
   Col,
   Container,
   Form,
+  Modal,
   Row,
   Table,
 } from "react-bootstrap";
 
-async function reportMistake(report: MistakeReport): Promise<PersonMistake> {
-  const response = await fetch("http://localhost:3000/mistakes", {
+async function suggestMistake(report: MistakeSuggestion): Promise<void> {
+  await fetch("http://localhost:3000/suggest/mistakes", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(report),
   });
-  return await response.json();
 }
 
 async function getMistakes(name: string): Promise<PersonMistakes> {
@@ -23,65 +23,88 @@ async function getMistakes(name: string): Promise<PersonMistakes> {
   return await response.json();
 }
 
-function ReportMistake() {
-  const [mistake, setMistake] = useState<PersonMistake | null>(null);
+function SuggestMistakeForm() {
   const [name, setName] = useState<string>("");
-  const [reportedMistake, setReportedMistake] = useState<Mistake>("");
+  const [mistake, setMistake] = useState<string>("");
+  const [context, setContext] = useState<string>("");
 
   async function handleSubmit(e) {
     e.preventDefault();
-    const response = await reportMistake({
+    await suggestMistake({
+      id: 0,
       name: name,
-      mistake: reportedMistake,
+      mistake: mistake,
+      context: context,
     });
-    setMistake(response);
     setName("");
-    setReportedMistake("");
+    setMistake("");
+    setContext("");
   }
 
   return (
     <>
-      <Row>
-        <Col>
-          <h2 className="text-center">Report a use of English</h2>
-        </Col>
-      </Row>
       <Form noValidate onSubmit={handleSubmit}>
-        <Row className="mb-3">
-          <Form.Group as={Col} controlId="formName">
-            <Form.Label>Name</Form.Label>
-            <Form.Control
-              type="text"
-              value={name}
-              onChange={(e) => {
-                setName(e.target.value);
-              }}
-            />
-          </Form.Group>
-          <Form.Group as={Col} controlId="formMistake">
-            <Form.Label>Mistake</Form.Label>
-            <Form.Control
-              type="text"
-              value={reportedMistake}
-              onChange={(e) => {
-                setReportedMistake(e.target.value);
-              }}
-            />
-          </Form.Group>
-        </Row>
-        <Row className="justify-content-md-center">
-          <Col md="auto">
-            <Button variant="primary" type="submit">
-              Submit
-            </Button>
-          </Col>
-        </Row>
+        <Form.Group controlId="formName">
+          <Form.Label>Name</Form.Label>
+          <Form.Control
+            type="text"
+            value={name}
+            onChange={(e) => {
+              setName(e.target.value);
+            }}
+          />
+        </Form.Group>
+        <Form.Group controlId="formMistake">
+          <Form.Label>Mistake</Form.Label>
+          <Form.Control
+            type="text"
+            value={mistake}
+            onChange={(e) => {
+              setMistake(e.target.value);
+            }}
+          />
+        </Form.Group>
+        <Form.Group controlId="formContext">
+          <Form.Label>Context</Form.Label>
+          <Form.Control
+            type="text"
+            value={context}
+            onChange={(e) => {
+              setContext(e.target.value);
+            }}
+          />
+          <Form.Text>When did this mistake happen?</Form.Text>
+        </Form.Group>
+        <Button className="mt-3" variant="primary" type="submit">
+          Submit
+        </Button>
       </Form>
+    </>
+  );
+}
+
+function SuggestMistake() {
+  const [show, setShow] = useState<boolean>(false);
+  const handleClose = () => setShow(false);
+  const handleShow = () => setShow(true);
+
+  return (
+    <>
       <p>
-        {mistake === null
-          ? ""
-          : `${mistake.name} has said ${mistake.counted_mistake.mistake} ${mistake.counted_mistake.count} times(s)`}
+        Heard a mistake that is not here?{" "}
+        <a href="#" onClick={handleShow}>
+          Tell me about it
+        </a>
       </p>
+      <p>If you wish to join, please contact me by mail or chat</p>
+      <Modal show={show} onHide={handleClose}>
+        <Modal.Header closeButton>
+          <Modal.Title>Report a mistake you've heard</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <SuggestMistakeForm />
+        </Modal.Body>
+      </Modal>
     </>
   );
 }
@@ -156,7 +179,7 @@ function ParticipantsView({ names }: { names: string[] }) {
 
   return (
     <>
-      <Row xs={2} md={5} lg={8}>
+      <Row xs={2} md={5} lg={8} className="mb-3 mt-3">
         {names.map((name) => (
           <Col key={name}>
             <ParticipantMistakesAccordion
@@ -186,7 +209,7 @@ export default function MistakesPane({ names }: { names: string[] }) {
         <ParticipantsView names={names} />
         <Row>
           <Col>
-            <ReportMistake />
+            <SuggestMistake />
           </Col>
         </Row>
       </Container>
