@@ -3,11 +3,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { Tab, Tabs } from "react-bootstrap";
 import "./types.d.ts";
 import MistakesPane from "./MistakesPane.tsx";
-
-// async function getAllMistakes(): Promise<PersonMistakes[]> {
-//   const response = await fetch("http://localhost:3000/mistakes");
-//   return await response.json();
-// }
+import TranslationsPane from "./TranslationsPane.tsx";
 
 async function getAllParticipants(): Promise<string[]> {
   const response = await fetch("http://localhost:3000/participants");
@@ -21,14 +17,24 @@ export default function App() {
     getAllParticipants().then((res) => setNames(res));
   }, []);
 
+  async function handleSelect(key: string | null): Promise<void> {
+    if (key === "mistakes") {
+      setNames(await getAllParticipants());
+    }
+  }
+
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
-      <Tabs defaultActiveKey="names" id="test-tabs">
-        <Tab eventKey="names" title="Mistakes">
+      <Tabs
+        defaultActiveKey="mistakes"
+        id="hebrew-tabs"
+        onSelect={handleSelect}
+      >
+        <Tab eventKey="mistakes" title="Mistakes">
           <MistakesPane names={names} />
         </Tab>
-        <Tab eventKey="test" title="Test">
-          Test
+        <Tab eventKey="translations" title="Translations">
+          <TranslationsPane />
         </Tab>
       </Tabs>
       <footer style={{ marginBottom: "auto" }}>
