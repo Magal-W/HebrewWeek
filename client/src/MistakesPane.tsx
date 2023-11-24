@@ -23,7 +23,13 @@ async function getMistakes(name: string): Promise<PersonMistakes> {
   return await response.json();
 }
 
-function SuggestMistakeForm() {
+function SuggestMistakeForm({
+  names,
+  onSubmit,
+}: {
+  names: string[];
+  onSubmit: () => void;
+}) {
   const [name, setName] = useState<string>("");
   const [mistake, setMistake] = useState<string>("");
   const [context, setContext] = useState<string>("");
@@ -39,6 +45,7 @@ function SuggestMistakeForm() {
     setName("");
     setMistake("");
     setContext("");
+    onSubmit();
   }
 
   return (
@@ -46,13 +53,18 @@ function SuggestMistakeForm() {
       <Form noValidate onSubmit={handleSubmit}>
         <Form.Group controlId="formName">
           <Form.Label>Name</Form.Label>
-          <Form.Control
-            type="text"
+          <Form.Select
             value={name}
             onChange={(e) => {
               setName(e.target.value);
             }}
-          />
+          >
+            {names.map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </Form.Select>
         </Form.Group>
         <Form.Group controlId="formMistake">
           <Form.Label>Mistake</Form.Label>
@@ -83,7 +95,7 @@ function SuggestMistakeForm() {
   );
 }
 
-function SuggestMistake() {
+function SuggestMistake({ names }: { names: string[] }) {
   const [show, setShow] = useState<boolean>(false);
   const handleClose = () => setShow(false);
   const handleShow = () => setShow(true);
@@ -102,7 +114,7 @@ function SuggestMistake() {
           <Modal.Title>Report a mistake you've heard</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <SuggestMistakeForm />
+          <SuggestMistakeForm names={names} onSubmit={handleClose} />
         </Modal.Body>
       </Modal>
     </>
@@ -204,15 +216,13 @@ function ParticipantsView({ names }: { names: string[] }) {
 
 export default function MistakesPane({ names }: { names: string[] }) {
   return (
-    <div>
-      <Container>
-        <ParticipantsView names={names} />
-        <Row>
-          <Col>
-            <SuggestMistake />
-          </Col>
-        </Row>
-      </Container>
-    </div>
+    <Container>
+      <ParticipantsView names={names} />
+      <Row>
+        <Col>
+          <SuggestMistake names={names} />
+        </Col>
+      </Row>
+    </Container>
   );
 }
