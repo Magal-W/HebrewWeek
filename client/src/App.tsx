@@ -4,6 +4,7 @@ import { Tab, Tabs } from "react-bootstrap";
 import "./types.d.ts";
 import MistakesPane from "./MistakesPane.tsx";
 import TranslationsPane from "./TranslationsPane.tsx";
+import HomeTab from "./HomeTab.tsx";
 
 async function getAllParticipants(): Promise<string[]> {
   const response = await fetch("http://localhost:3000/participants");
@@ -25,11 +26,10 @@ export default function App() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
-      <Tabs
-        defaultActiveKey="mistakes"
-        id="hebrew-tabs"
-        onSelect={handleSelect}
-      >
+      <Tabs defaultActiveKey="home" id="hebrew-tabs" onSelect={handleSelect}>
+        <Tab eventKey="home" title="Home">
+          <HomeTab />
+        </Tab>
         <Tab eventKey="mistakes" title="Mistakes">
           <MistakesPane names={names} />
         </Tab>
