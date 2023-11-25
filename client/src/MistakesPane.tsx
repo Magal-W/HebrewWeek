@@ -49,49 +49,47 @@ function SuggestMistakeForm({
   }
 
   return (
-    <>
-      <Form noValidate onSubmit={handleSubmit}>
-        <Form.Group controlId="formName">
-          <Form.Label>Name</Form.Label>
-          <Form.Select
-            value={name}
-            onChange={(e) => {
-              setName(e.target.value);
-            }}
-          >
-            {names.map((n) => (
-              <option key={n} value={n}>
-                {n}
-              </option>
-            ))}
-          </Form.Select>
-        </Form.Group>
-        <Form.Group controlId="formMistake">
-          <Form.Label>Mistake</Form.Label>
-          <Form.Control
-            type="text"
-            value={mistake}
-            onChange={(e) => {
-              setMistake(e.target.value);
-            }}
-          />
-        </Form.Group>
-        <Form.Group controlId="formContext">
-          <Form.Label>Context</Form.Label>
-          <Form.Control
-            type="text"
-            value={context}
-            onChange={(e) => {
-              setContext(e.target.value);
-            }}
-          />
-          <Form.Text>When did this mistake happen?</Form.Text>
-        </Form.Group>
-        <Button className="mt-3" variant="primary" type="submit">
-          Submit
-        </Button>
-      </Form>
-    </>
+    <Form noValidate onSubmit={handleSubmit}>
+      <Form.Group controlId="formName">
+        <Form.Label>Name</Form.Label>
+        <Form.Select
+          value={name}
+          onChange={(e) => {
+            setName(e.target.value);
+          }}
+        >
+          {names.map((n) => (
+            <option key={n} value={n}>
+              {n}
+            </option>
+          ))}
+        </Form.Select>
+      </Form.Group>
+      <Form.Group controlId="formMistake">
+        <Form.Label>Mistake</Form.Label>
+        <Form.Control
+          type="text"
+          value={mistake}
+          onChange={(e) => {
+            setMistake(e.target.value);
+          }}
+        />
+      </Form.Group>
+      <Form.Group controlId="formContext">
+        <Form.Label>Context</Form.Label>
+        <Form.Control
+          type="text"
+          value={context}
+          onChange={(e) => {
+            setContext(e.target.value);
+          }}
+        />
+        <Form.Text>When did this mistake happen?</Form.Text>
+      </Form.Group>
+      <Button className="mt-3" variant="primary" type="submit">
+        Submit
+      </Button>
+    </Form>
   );
 }
 
