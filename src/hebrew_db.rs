@@ -106,7 +106,7 @@ impl HebrewDb {
 
     pub fn suggest_translation(&self, suggestion: TranslationSuggestion) -> Result<i64> {
         self.0
-            .prepare("INSERT INTO TranslationsSuggestion VALUES(:english, :hebrew)")?
+            .prepare("INSERT INTO TranslationsSuggestions VALUES(:english, :hebrew)")?
             .insert([suggestion.english, suggestion.hebrew])
             .map_err(|err| err.into())
     }
