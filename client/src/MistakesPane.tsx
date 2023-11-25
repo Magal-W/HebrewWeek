@@ -50,14 +50,15 @@ function SuggestMistakeForm({
 
   return (
     <Form noValidate onSubmit={handleSubmit}>
-      <Form.Group controlId="formName">
-        <Form.Label>Name</Form.Label>
+      <Form.Group controlId="formName" className="mb-3">
+        <Form.Label>שם</Form.Label>
         <Form.Select
           value={name}
           onChange={(e) => {
             setName(e.target.value);
           }}
         >
+          <option></option>
           {names.map((n) => (
             <option key={n} value={n}>
               {n}
@@ -65,8 +66,8 @@ function SuggestMistakeForm({
           ))}
         </Form.Select>
       </Form.Group>
-      <Form.Group controlId="formMistake">
-        <Form.Label>Mistake</Form.Label>
+      <Form.Group controlId="formMistake" className="mb-3">
+        <Form.Label>שגיאה</Form.Label>
         <Form.Control
           type="text"
           value={mistake}
@@ -75,8 +76,8 @@ function SuggestMistakeForm({
           }}
         />
       </Form.Group>
-      <Form.Group controlId="formContext">
-        <Form.Label>Context</Form.Label>
+      <Form.Group controlId="formContext" className="mb-3">
+        <Form.Label>הקשר</Form.Label>
         <Form.Control
           type="text"
           value={context}
@@ -84,11 +85,13 @@ function SuggestMistakeForm({
             setContext(e.target.value);
           }}
         />
-        <Form.Text>When did this mistake happen?</Form.Text>
+        <Form.Text>מתי ובאיזה הקשר קרתה השגיאה?</Form.Text>
       </Form.Group>
-      <Button className="mt-3" variant="primary" type="submit">
-        Submit
-      </Button>
+      <div style={{ direction: "ltr", textAlign: "left" }}>
+        <Button variant="primary" type="submit">
+          שלח
+        </Button>
+      </div>
     </Form>
   );
 }
@@ -99,23 +102,38 @@ function SuggestMistake({ names }: { names: string[] }) {
   const handleShow = () => setShow(true);
 
   return (
-    <>
+    <div
+      style={{
+        direction: "rtl",
+        textAlign: "right",
+      }}
+    >
       <p>
-        Heard a mistake that is not here?{" "}
+        שמעתם שגיאה שאינה מופיעה פה?{" "}
         <a href="#" onClick={handleShow}>
-          Tell me about it
+          דווחו לי עליה
         </a>
       </p>
-      <p>If you wish to join, please contact me by mail or chat</p>
-      <Modal show={show} onHide={handleClose}>
-        <Modal.Header closeButton>
-          <Modal.Title>Report a mistake you've heard</Modal.Title>
+      <p>
+        אם אתם מעוניינים להצטרף ושמכם אינו מופיע פה, אנא פנו אליי בדוא"ל או
+        בהודעה ישירה
+      </p>
+      <Modal
+        style={{
+          direction: "rtl",
+          textAlign: "right",
+        }}
+        show={show}
+        onHide={handleClose}
+      >
+        <Modal.Header>
+          <Modal.Title>דווחו על שגיאה</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <SuggestMistakeForm names={names} onSubmit={handleClose} />
         </Modal.Body>
       </Modal>
-    </>
+    </div>
   );
 }
 
@@ -140,7 +158,12 @@ function ParticipantMistakesAccordion({
   return (
     <Accordion activeKey={activeKeys}>
       <Accordion.Item eventKey={name}>
-        <Accordion.Header onClick={onSelect(name)}>{name}</Accordion.Header>
+        <Accordion.Header
+          onClick={onSelect(name)}
+          style={{ textAlign: "right", direction: "rtl" }}
+        >
+          {name}
+        </Accordion.Header>
         <Accordion.Body onEnter={handleEnter}>
           <PersonMistakesTable personMistakes={mistakes} />
         </Accordion.Body>
@@ -158,15 +181,15 @@ function PersonMistakesTable({
     <Table striped bordered hover size="sm">
       <thead>
         <tr>
-          <th className="text-center">Mistake</th>
-          <th className="text-center">Count</th>
+          <th className="text-center">כמות</th>
+          <th className="text-center">שגיאה</th>
         </tr>
       </thead>
       <tbody>
         {personMistakes.counted_mistakes.map((mistake) => (
           <tr key={mistake.mistake}>
-            <th className="text-center">{mistake.mistake}</th>
             <th className="text-center">{mistake.count}</th>
+            <th className="text-center">{mistake.mistake}</th>
           </tr>
         ))}
       </tbody>
@@ -202,10 +225,10 @@ function ParticipantsView({ names }: { names: string[] }) {
       </Row>
       <Row className="justify-content-md-center">
         <Col md="auto">
-          <Button onClick={() => setActiveKeys(names)}>Expand All</Button>
+          <Button onClick={() => setActiveKeys([])}>קפל הכול</Button>
         </Col>
         <Col md="auto">
-          <Button onClick={() => setActiveKeys([])}>Collapse All</Button>
+          <Button onClick={() => setActiveKeys(names)}>הרחב הכול</Button>
         </Col>
       </Row>
     </>

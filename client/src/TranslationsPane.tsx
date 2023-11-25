@@ -36,20 +36,14 @@ async function suggestTranslation(
   });
 }
 
-function UnknownWordLabel({
-  english,
-  known,
-}: {
-  english: string;
-  known: boolean;
-}) {
-  if (english === "" || known) {
+function UnknownWordLabel({ english }: { english: string }) {
+  if (english === "") {
     return <></>;
   }
 
   return (
     <Row>
-      <p>{`Sorry, we do not know '${english}'... Try searching for a different form of the word`}</p>
+      <p>{`סליחה, אני לא מכיר את המילה '${english}'... נסה לחפש צורה אחרת של המילה`}</p>
     </Row>
   );
 }
@@ -68,7 +62,7 @@ function TranslationList({
   if (translations.length === 0) {
     return (
       <Row className="mb-3">
-        <p>{`Hmm, it seems we currently don't have a translation for '${english}'. Do you have an idea?`}</p>
+        <p>{`נראה שאין לי כרגע תרגום טוב ל-'${english}'. אולי לך יש רעיון?`}</p>
       </Row>
     );
   }
@@ -76,7 +70,7 @@ function TranslationList({
   return (
     <Row className="mb-3">
       <ListGroup>
-        <ListGroup.Item variant="primary">{`Translations for '${english}'`}</ListGroup.Item>
+        <ListGroup.Item variant="primary">{`תרגומים ל-'${english}'`}</ListGroup.Item>
         {translations.map((translation) => (
           <ListGroup.Item key={translation} variant="secondary">
             {translation}
@@ -105,33 +99,36 @@ function TranslateBar() {
   }
 
   return (
-    <>
+    <div style={{ textAlign: "right", direction: "rtl" }}>
       <Row className="mb-3">
         <Stack direction="horizontal" gap={3}>
           <Form.Control
-            placeholder="Translate..."
+            placeholder="תרגם..."
             value={translationRequest}
             onChange={(e) => {
               setTranslationRequest(e.target.value);
             }}
           />
-          <Button onClick={handleClick}>Translate</Button>
+          <Button onClick={handleClick}>תרגם</Button>
         </Stack>
       </Row>
-      <UnknownWordLabel english={english} known={known} />
-      <TranslationList english={english} translations={translations} />
-    </>
+      {known ? (
+        <TranslationList english={english} translations={translations} />
+      ) : (
+        <UnknownWordLabel english={english} />
+      )}
+    </div>
   );
 }
 
 function TranslationsTable({ translations }: { translations: Translation[] }) {
   return (
     <Row className="mb-3">
-      <Table borderless>
+      <Table>
         <thead>
           <tr>
-            <th>English</th>
-            <th>Hebrew</th>
+            <th>לעז</th>
+            <th>עברית</th>
           </tr>
         </thead>
         <tbody>
@@ -178,7 +175,7 @@ function TranslationsSearchBar({
   }
 
   return (
-    <Form.Control type="search" placeholder="Search" onChange={handleChange} />
+    <Form.Control type="search" placeholder="חפש" onChange={handleChange} />
   );
 }
 
@@ -220,7 +217,7 @@ function SuggestTranslationForm({ onSubmit }: { onSubmit: () => void }) {
       <Form.Group controlId="formEnglish">
         <Form.Control
           type="text"
-          placeholder="English word"
+          placeholder="מילה לועזית"
           value={english}
           onChange={(e) => setEnglish(e.target.value)}
         />
@@ -228,14 +225,16 @@ function SuggestTranslationForm({ onSubmit }: { onSubmit: () => void }) {
       <Form.Group controlId="formHebrew">
         <Form.Control
           type="text"
-          placeholder="Hebrew word"
+          placeholder="מילה עברית"
           value={hebrew}
           onChange={(e) => setHebrew(e.target.value)}
         />
       </Form.Group>
-      <Button className="mt-3" variant="primary" type="submit">
-        Submit
-      </Button>
+      <div style={{ direction: "ltr", textAlign: "left" }}>
+        <Button className="mt-3" variant="primary" type="submit">
+          הצע
+        </Button>
+      </div>
     </Form>
   );
 }
@@ -255,22 +254,26 @@ function TranslationModals() {
   }
 
   return (
-    <>
+    <div style={{ direction: "rtl", textAlign: "right" }}>
       <Row className="mb-3 justify-content-md-center">
         <Col md="auto">
           <Button type="submit" onClick={handleClickDict}>
-            Dictionary
+            למילון
           </Button>
         </Col>
         <Col md="auto">
           <Button type="submit" onClick={() => setShowForm(true)}>
-            Suggest a Translation
+            הצע תרגום
           </Button>
         </Col>
       </Row>
-      <Modal show={showDict} onHide={() => setShowDict(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Dictionary</Modal.Title>
+      <Modal
+        style={{ direction: "rtl", textAlign: "right" }}
+        show={showDict}
+        onHide={() => setShowDict(false)}
+      >
+        <Modal.Header>
+          <Modal.Title>מילון המונחים</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <AllTranslationsView
@@ -280,15 +283,19 @@ function TranslationModals() {
           />
         </Modal.Body>
       </Modal>
-      <Modal show={showForm} onHide={() => setShowForm(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Suggest a Translation</Modal.Title>
+      <Modal
+        style={{ direction: "rtl", textAlign: "right" }}
+        show={showForm}
+        onHide={() => setShowForm(false)}
+      >
+        <Modal.Header>
+          <Modal.Title>הצע תרגום</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <SuggestTranslationForm onSubmit={handleCloseForm} />
         </Modal.Body>
       </Modal>
-    </>
+    </div>
   );
 }
 

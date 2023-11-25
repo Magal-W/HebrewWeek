@@ -26,20 +26,32 @@ export default function App() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
-      <Tabs defaultActiveKey="home" id="hebrew-tabs" onSelect={handleSelect}>
-        <Tab eventKey="home" title="Home">
+      <Tabs
+        style={{ direction: "rtl" }}
+        defaultActiveKey="home"
+        id="hebrew-tabs"
+        onSelect={handleSelect}
+      >
+        <Tab eventKey="home" title="בית">
           <HomeTab />
         </Tab>
-        <Tab eventKey="mistakes" title="Mistakes">
+        <Tab eventKey="mistakes" title="לוח המשתתפים">
           <MistakesPane names={names} />
         </Tab>
-        <Tab eventKey="translations" title="Translations">
+        <Tab eventKey="translations" title="מילון">
           <TranslationsPane />
         </Tab>
       </Tabs>
-      <footer style={{ marginBottom: "auto" }}>
+      <footer
+        style={{
+          direction: "rtl",
+          textAlign: "right",
+          marginRight: 20,
+          marginBottom: "auto",
+        }}
+      >
         <hr></hr>
-        <p>The official Hebrew Week™ portal by Magal Weinberger</p>
+        <p>אתר שבוע העברית™ הרשמי מאת מגל ויינברגר</p>
       </footer>
     </div>
   );
