@@ -1,4 +1,5 @@
 mod api;
+mod auth;
 mod error;
 mod hebrew_db;
 mod types;
@@ -10,10 +11,11 @@ use std::net::SocketAddr;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::fmt;
+use tracing_subscriber::fmt::init;
 
 #[tokio::main]
 async fn main() {
-    fmt().init();
+    init();
 
     let cors = CorsLayer::new()
         .allow_origin(Any)
@@ -22,8 +24,8 @@ async fn main() {
 
     let app = routes()
         .with_state(AppState::new().expect("Failed creating app state"))
-        .layer(cors)
-        .layer(TraceLayer::new_for_http());
+        .layer(cors);
+    // .layer(TraceLayer::new_for_http());
 
     // run it
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));

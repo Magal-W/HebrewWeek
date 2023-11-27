@@ -1,3 +1,4 @@
+use crate::auth::authorize;
 use crate::error::AppError;
 use crate::hebrew_db::HebrewDb;
 use crate::types::{
@@ -5,9 +6,11 @@ use crate::types::{
     TranslationSuggestion,
 };
 use axum::extract::Path;
+use axum::headers::authorization::Basic;
+use axum::headers::Authorization;
 use axum::routing::{delete, get, post};
-use axum::Router;
 use axum::{extract::State, Json};
+use axum::{Router, TypedHeader};
 use std::sync::{Arc, Mutex};
 use tracing::instrument;
 
@@ -26,6 +29,7 @@ impl AppState {
 
 pub fn routes() -> Router<AppState> {
     Router::new()
+        .route("/auth", get(auth))
         .route("/participants", get(participants).post(add_participant))
         .route("/mistakes", get(all_mistakes).post(report_mistake))
         .route("/mistakes/:name", get(mistakes))
@@ -181,4 +185,9 @@ pub async fn add_participant(
 ) -> Result<(), AppError> {
     state.db.lock().unwrap().add_participant(&payload)?;
     Ok(())
+}
+
+#[instrument]
+pub async fn auth(TypedHeader(authorization): TypedHeader<Authorization<Basic>>) -> Json<bool> {
+    Json(authorize(authorization.password()))
 }

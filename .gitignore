@@ -2,6 +2,7 @@
 *.db
 .cargo/
 vendor/
+*.ass
 
 # Logs
 logs
