@@ -8,6 +8,7 @@ use crate::api::AppState;
 use hyper::Method;
 use std::net::SocketAddr;
 use tower_http::cors::{Any, CorsLayer};
+use tower_http::trace::TraceLayer;
 use tracing_subscriber::fmt;
 
 #[tokio::main]
@@ -17,11 +18,12 @@ async fn main() {
     let cors = CorsLayer::new()
         .allow_origin(Any)
         .allow_headers(Any)
-        .allow_methods([Method::GET, Method::POST]);
+        .allow_methods([Method::GET, Method::POST, Method::DELETE]);
 
     let app = routes()
         .with_state(AppState::new().expect("Failed creating app state"))
-        .layer(cors);
+        .layer(cors)
+        .layer(TraceLayer::new_for_http());
 
     // run it
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
