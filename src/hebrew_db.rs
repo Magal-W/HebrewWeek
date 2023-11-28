@@ -39,7 +39,7 @@ impl HebrewDb {
 
     pub fn add_participant(&self, name: &str) -> Result<()> {
         self.0
-            .prepare("INSERT INTO Particiapnts VALUES(:name)")?
+            .prepare("INSERT INTO Participants VALUES(:name)")?
             .insert([name])?;
         Ok(())
     }

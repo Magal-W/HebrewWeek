@@ -5,11 +5,7 @@ import "./types.d.ts";
 import MistakesPane from "./MistakesPane.tsx";
 import TranslationsPane from "./TranslationsPane.tsx";
 import HomeTab from "./HomeTab.tsx";
-
-async function getAllParticipants(): Promise<string[]> {
-  const response = await fetch("http://localhost:3000/participants");
-  return await response.json();
-}
+import { getAllParticipants } from "./api_utils.ts";
 
 export default function App() {
   const [names, setNames] = useState<string[]>([]);

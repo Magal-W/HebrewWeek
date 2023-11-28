@@ -1,6 +1,37 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { Button, Form, Modal } from "react-bootstrap";
+import { Button, Form, Modal, Tab, Tabs } from "react-bootstrap";
+import { authHeader, getAllParticipants } from "./api_utils";
+import AdminParticipantsTab from "./AdminParticipantsTab";
+
+function AdminTabs({ password }: { password: string }) {
+  const [participants, setParticipants] = useState<string[]>([]);
+  const [participantsTrigger, setParticipantsTrigger] = useState<boolean>(true);
+
+  useEffect(() => {
+    getAllParticipants().then((res) => setParticipants(res));
+  }, [participantsTrigger]);
+
+  async function handleSelect(key: string | null): Promise<void> {
+    if (key == "participants") {
+      setParticipants(await getAllParticipants());
+    }
+  }
+
+  return (
+    <div style={{ direction: "rtl" }}>
+      <Tabs defaultActiveKey="participants" onSelect={handleSelect}>
+        <Tab eventKey="participants" title="משתתפים">
+          <AdminParticipantsTab
+            password={password}
+            participants={participants}
+            triggerRefresh={() => setParticipantsTrigger(!participantsTrigger)}
+          />
+        </Tab>
+      </Tabs>
+    </div>
+  );
+}
 
 export default function Admin() {
   const [show, setShow] = useState<boolean>(true);
@@ -9,16 +40,18 @@ export default function Admin() {
   async function handleClick() {
     const response = await fetch("http://localhost:3000/auth", {
       method: "GET",
-      headers: { Authorization: `Basic ${btoa("admin:" + password)}` },
+      headers: authHeader(password),
     });
     const res: boolean = await response.json();
     setShow(!res);
-    setPassword("");
+    if (!res) {
+      setPassword("");
+    }
   }
 
   return (
     <div style={{ direction: "rtl", textAlign: "right" }}>
-      <p>אני הוא המנהל</p>
+      <AdminTabs password={password} />
       <Modal
         style={{ direction: "rtl", textAlign: "right" }}
         show={show}

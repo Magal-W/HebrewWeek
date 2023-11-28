@@ -10,11 +10,7 @@ import {
   Stack,
   Table,
 } from "react-bootstrap";
-
-async function isKnownWord(word: string): Promise<boolean> {
-  const response = await fetch(`http://localhost:3000/known/${word}`);
-  return await response.json();
-}
+import { isKnownWord } from "./api_utils";
 
 async function getAllTranslations(): Promise<Translation[]> {
   const response = await fetch("http://localhost:3000/translations");

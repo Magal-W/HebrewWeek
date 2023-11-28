@@ -28,7 +28,7 @@ async fn admin_pass() -> Result<&'static str> {
     CELL_PASS
         .get_or_try_init(async {
             let pass_string = tokio::fs::read_to_string("p.ass").await?;
-            dbg!(Ok(pass_string))
+            Ok(pass_string)
         })
         .await
         .map(|string| string.as_str())
