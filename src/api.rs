@@ -77,8 +77,10 @@ pub async fn mistakes(
 #[instrument(skip(state), err)]
 pub async fn report_mistake(
     State(state): State<AppState>,
+    TypedHeader(authorization): TypedHeader<Authorization<Basic>>,
     Json(payload): Json<MistakeReport>,
 ) -> Result<Json<PersonMistake>, AppError> {
+    authenticate(authorization).await?;
     Ok(Json(state.db.lock().unwrap().report_mistake(payload)?))
 }
 
@@ -100,8 +102,10 @@ pub async fn all_translations(
 #[instrument(skip(state), err)]
 pub async fn add_translation(
     State(state): State<AppState>,
+    TypedHeader(authorization): TypedHeader<Authorization<Basic>>,
     Json(payload): Json<Translation>,
 ) -> Result<(), AppError> {
+    authenticate(authorization).await?;
     state.db.lock().unwrap().add_translation(payload)?;
     Ok(())
 }
@@ -125,8 +129,10 @@ pub async fn translate(
 #[instrument(skip(state), err)]
 pub async fn discard_mistake_suggestion(
     State(state): State<AppState>,
+    TypedHeader(authorization): TypedHeader<Authorization<Basic>>,
     Json(payload): Json<i64>,
 ) -> Result<(), AppError> {
+    authenticate(authorization).await?;
     state
         .db
         .lock()
@@ -138,8 +144,10 @@ pub async fn discard_mistake_suggestion(
 #[instrument(skip(state), err)]
 pub async fn discard_translation_suggestion(
     State(state): State<AppState>,
+    TypedHeader(authorization): TypedHeader<Authorization<Basic>>,
     Json(payload): Json<i64>,
 ) -> Result<(), AppError> {
+    authenticate(authorization).await?;
     state
         .db
         .lock()
@@ -167,8 +175,10 @@ pub async fn all_translation_suggestions(
 #[instrument(skip(state), err)]
 pub async fn add_canonical(
     State(state): State<AppState>,
+    TypedHeader(authorization): TypedHeader<Authorization<Basic>>,
     Json(payload): Json<CanonicalRequest>,
 ) -> Result<(), AppError> {
+    authenticate(authorization).await?;
     state.db.lock().unwrap().add_canonical(payload)?;
     Ok(())
 }
@@ -181,13 +191,25 @@ pub async fn participants(State(state): State<AppState>) -> Result<Json<Vec<Stri
 #[instrument(skip(state), err)]
 pub async fn add_participant(
     State(state): State<AppState>,
+    TypedHeader(authorization): TypedHeader<Authorization<Basic>>,
     Json(payload): Json<String>,
 ) -> Result<(), AppError> {
+    authenticate(authorization).await?;
     state.db.lock().unwrap().add_participant(&payload)?;
     Ok(())
 }
 
 #[instrument]
-pub async fn auth(TypedHeader(authorization): TypedHeader<Authorization<Basic>>) -> Json<bool> {
-    Json(authorize(authorization.password()))
+pub async fn auth(
+    TypedHeader(authorization): TypedHeader<Authorization<Basic>>,
+) -> Result<Json<bool>, AppError> {
+    Ok(Json(authorize(authorization.password()).await?))
+}
+
+async fn authenticate(header: Authorization<Basic>) -> Result<(), AppError> {
+    if authorize(header.password()).await? {
+        Ok(())
+    } else {
+        Err(AppError::AuthError)
+    }
 }

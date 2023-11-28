@@ -19,12 +19,18 @@ export default function Admin() {
   return (
     <div style={{ direction: "rtl", textAlign: "right" }}>
       <p>אני הוא המנהל</p>
-      <Modal show={show} onHide={() => setShow(false)} keyboard={false}>
+      <Modal
+        style={{ direction: "rtl", textAlign: "right" }}
+        show={show}
+        onHide={() => setShow(false)}
+        keyboard={false}
+      >
         <Modal.Header>
           <Modal.Title>האם אתה מנהל?</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form.Control
+            type="password"
             placeholder="סיסמה"
             value={password}
             onChange={(e) => setPassword(e.target.value)}

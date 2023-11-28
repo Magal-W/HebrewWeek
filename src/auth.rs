@@ -1,15 +1,35 @@
+use anyhow::Result;
+use async_once_cell::OnceCell;
 use scrypt::{
-    password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
+    password_hash::{PasswordHash, PasswordVerifier},
     Scrypt,
 };
-use tracing::info;
-pub fn authorize(password: &str) -> bool {
-    info!("Started authorize");
-    let salt = SaltString::from_b64("aGVicmV3").unwrap();
-    dbg!(Scrypt
-        .hash_password(password.as_bytes(), &salt)
-        .unwrap()
-        .to_string());
-    info!("Finished auth");
-    dbg!(password) == "Eli"
+
+static CELL_HASH: OnceCell<PasswordHash<'static>> = OnceCell::new();
+static CELL_PASS: OnceCell<String> = OnceCell::new();
+
+pub async fn authorize(password: &str) -> Result<bool> {
+    Ok(Scrypt
+        .verify_password(password.as_bytes(), admin_hash().await?)
+        .is_ok())
+}
+
+async fn admin_hash() -> Result<&'static PasswordHash<'static>> {
+    CELL_HASH
+        .get_or_try_init(async {
+            let pass_string = admin_pass().await?;
+            let hash: PasswordHash<'static> = PasswordHash::new(pass_string)?;
+            Ok(hash)
+        })
+        .await
+}
+
+async fn admin_pass() -> Result<&'static str> {
+    CELL_PASS
+        .get_or_try_init(async {
+            let pass_string = tokio::fs::read_to_string("p.ass").await?;
+            dbg!(Ok(pass_string))
+        })
+        .await
+        .map(|string| string.as_str())
 }
