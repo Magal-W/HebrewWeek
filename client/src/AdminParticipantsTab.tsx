@@ -33,7 +33,7 @@ function AddParticipantForm({
 }: {
   password: string;
   onSubmit: () => void;
-  triggerRefresh: () => void;
+  triggerRefresh: () => Promise<void>;
 }) {
   const [participant, setParticipant] = useState<string>("");
 
@@ -41,7 +41,7 @@ function AddParticipantForm({
     e.preventDefault();
     await addParticipant(password, participant);
     setParticipant("");
-    triggerRefresh();
+    await triggerRefresh();
     onSubmit();
   }
 
@@ -71,7 +71,7 @@ export default function AdminParticipantsTab({
 }: {
   password: string;
   participants: string[];
-  triggerRefresh: () => void;
+  triggerRefresh: () => Promise<void>;
 }) {
   return (
     <>

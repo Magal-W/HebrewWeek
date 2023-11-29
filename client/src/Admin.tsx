@@ -3,18 +3,36 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { Button, Form, Modal, Tab, Tabs } from "react-bootstrap";
 import { authHeader, getAllParticipants } from "./api_utils";
 import AdminParticipantsTab from "./AdminParticipantsTab";
+import AdminTranslationTab from "./AdminTranslationsTab";
+
+async function getAllTranslationSuggestions(): Promise<
+  TranslationSuggestion[]
+> {
+  const response = await fetch("http://localhost:3000/suggest/translations");
+  return await response.json();
+}
 
 function AdminTabs({ password }: { password: string }) {
   const [participants, setParticipants] = useState<string[]>([]);
-  const [participantsTrigger, setParticipantsTrigger] = useState<boolean>(true);
+  const [translationSuggestions, setTranslationSuggestions] = useState<
+    TranslationSuggestion[]
+  >([]);
 
   useEffect(() => {
     getAllParticipants().then((res) => setParticipants(res));
-  }, [participantsTrigger]);
+  }, []);
+
+  useEffect(() => {
+    getAllTranslationSuggestions().then((res) =>
+      setTranslationSuggestions(res),
+    );
+  }, []);
 
   async function handleSelect(key: string | null): Promise<void> {
-    if (key == "participants") {
+    if (key === "participants") {
       setParticipants(await getAllParticipants());
+    } else if (key === "translations") {
+      setTranslationSuggestions(await getAllTranslationSuggestions());
     }
   }
 
@@ -25,7 +43,18 @@ function AdminTabs({ password }: { password: string }) {
           <AdminParticipantsTab
             password={password}
             participants={participants}
-            triggerRefresh={() => setParticipantsTrigger(!participantsTrigger)}
+            triggerRefresh={async () =>
+              setParticipants(await getAllParticipants())
+            }
+          />
+        </Tab>
+        <Tab eventKey="translations" title="תרגומים">
+          <AdminTranslationTab
+            password={password}
+            suggestions={translationSuggestions}
+            triggerRefresh={async () =>
+              setTranslationSuggestions(await getAllTranslationSuggestions())
+            }
           />
         </Tab>
       </Tabs>
