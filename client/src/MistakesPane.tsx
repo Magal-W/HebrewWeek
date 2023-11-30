@@ -34,7 +34,7 @@ function SuggestMistakeForm({
   const [mistake, setMistake] = useState<string>("");
   const [context, setContext] = useState<string>("");
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: React.SyntheticEvent) {
     e.preventDefault();
     await suggestMistake({
       id: 0,

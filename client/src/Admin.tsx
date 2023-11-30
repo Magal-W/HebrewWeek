@@ -6,6 +6,7 @@ import AdminParticipantsTab from "./AdminParticipantsTab";
 import AdminTranslationTab from "./AdminTranslationsTab";
 import AdminMistakesTab from "./AdminMistakesTab";
 import { PasswordContext } from "./PasswordContext";
+import AdminCanonicalizationTab from "./NewCanonicalization";
 
 async function getAllTranslationSuggestions(): Promise<
   TranslationSuggestion[]
@@ -73,6 +74,9 @@ function AdminTabs({ password }: { password: string }) {
                 setMistakeSuggestions(await getAllMistakeSuggestions())
               }
             />
+          </Tab>
+          <Tab eventKey="canonicalization" title="יישור קו">
+            <AdminCanonicalizationTab />
           </Tab>
         </Tabs>
       </PasswordContext.Provider>

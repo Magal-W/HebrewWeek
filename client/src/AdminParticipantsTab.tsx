@@ -37,7 +37,7 @@ function AddParticipantForm({
   const password = useContext(PasswordContext);
   const [participant, setParticipant] = useState<string>("");
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: React.SyntheticEvent) {
     e.preventDefault();
     await addParticipant(password, participant);
     setParticipant("");

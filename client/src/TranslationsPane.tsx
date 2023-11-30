@@ -158,7 +158,7 @@ function TranslationsSearchBar({
     return sanitize(word).includes(sanitize(term));
   };
 
-  function handleChange(e) {
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const searchTerm: string = e.target.value;
 
     setTranslations(
@@ -200,7 +200,7 @@ function SuggestTranslationForm({ onSubmit }: { onSubmit: () => void }) {
   const [english, setEnglish] = useState<string>("");
   const [hebrew, setHebrew] = useState<string>("");
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: React.SyntheticEvent) {
     e.preventDefault();
     await suggestTranslation({ id: 0, english: english, hebrew: hebrew });
     setEnglish("");

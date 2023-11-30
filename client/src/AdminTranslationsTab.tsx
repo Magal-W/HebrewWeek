@@ -12,6 +12,7 @@ import {
 import { authHeader } from "./api_utils";
 import { useContext, useState } from "react";
 import { PasswordContext } from "./PasswordContext";
+import { CanonicalizeUnknownWord } from "./NewCanonicalization";
 
 async function discardSuggestion(id: number, password: string): Promise<void> {
   await fetch("http://localhost:3000/suggest/translations", {
@@ -44,7 +45,7 @@ function AcceptTranslationForm({
   const password = useContext(PasswordContext);
   const [hebrew, setHebrew] = useState<string>(suggestion.hebrew);
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: React.SyntheticEvent) {
     e.preventDefault();
     await acceptSuggestion(suggestion.english, hebrew, password);
     await discardSuggestion(suggestion.id, password);
@@ -103,8 +104,12 @@ function TranslationSuggestionCard({
                   </thead>
                   <tbody>
                     <tr>
-                      <td>{suggestion.english}</td>
-                      <td>{suggestion.hebrew}</td>
+                      <td>
+                        <CanonicalizeUnknownWord word={suggestion.english} />
+                      </td>
+                      <td>
+                        <CanonicalizeUnknownWord word={suggestion.hebrew} />
+                      </td>
                     </tr>
                   </tbody>
                 </Table>

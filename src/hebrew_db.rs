@@ -195,7 +195,7 @@ impl HebrewDb {
         let rows_changed = self
             .0
             .prepare("INSERT OR REPLACE INTO CanonicalWords VALUES(:word, :canonical)")?
-            .execute([&request.word, &request.word])?;
+            .execute([&request.word, &request.canonical])?;
         ensure!(
             rows_changed == 1 || rows_changed == 2,
             format!(

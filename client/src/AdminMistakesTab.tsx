@@ -10,6 +10,7 @@ import {
 import { authHeader } from "./api_utils";
 import { useContext } from "react";
 import { PasswordContext } from "./PasswordContext";
+import { CanonicalizeUnknownWord } from "./NewCanonicalization";
 
 async function discardSuggestion(id: number, password: string): Promise<void> {
   await fetch("http://localhost:3000/suggest/mistakes", {
@@ -71,7 +72,9 @@ function MistakeSuggestionCard({
                   <tbody>
                     <tr>
                       <td>{suggestion.name}</td>
-                      <td>{suggestion.mistake}</td>
+                      <td>
+                        <CanonicalizeUnknownWord word={suggestion.mistake} />
+                      </td>
                     </tr>
                   </tbody>
                 </Table>
