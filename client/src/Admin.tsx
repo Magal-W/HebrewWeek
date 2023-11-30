@@ -4,6 +4,7 @@ import { Button, Form, Modal, Tab, Tabs } from "react-bootstrap";
 import { authHeader, getAllParticipants } from "./api_utils";
 import AdminParticipantsTab from "./AdminParticipantsTab";
 import AdminTranslationTab from "./AdminTranslationsTab";
+import AdminMistakesTab from "./AdminMistakesTab";
 
 async function getAllTranslationSuggestions(): Promise<
   TranslationSuggestion[]
@@ -12,20 +13,26 @@ async function getAllTranslationSuggestions(): Promise<
   return await response.json();
 }
 
+async function getAllMistakeSuggestions(): Promise<MistakeSuggestion[]> {
+  const response = await fetch("http://localhost:3000/suggest/mistakes");
+  return await response.json();
+}
+
 function AdminTabs({ password }: { password: string }) {
   const [participants, setParticipants] = useState<string[]>([]);
   const [translationSuggestions, setTranslationSuggestions] = useState<
     TranslationSuggestion[]
   >([]);
+  const [mistakeSuggestions, setMistakeSuggestions] = useState<
+    MistakeSuggestion[]
+  >([]);
 
   useEffect(() => {
     getAllParticipants().then((res) => setParticipants(res));
-  }, []);
-
-  useEffect(() => {
     getAllTranslationSuggestions().then((res) =>
       setTranslationSuggestions(res),
     );
+    getAllMistakeSuggestions().then((res) => setMistakeSuggestions(res));
   }, []);
 
   async function handleSelect(key: string | null): Promise<void> {
@@ -33,6 +40,8 @@ function AdminTabs({ password }: { password: string }) {
       setParticipants(await getAllParticipants());
     } else if (key === "translations") {
       setTranslationSuggestions(await getAllTranslationSuggestions());
+    } else if (key === "mistakes") {
+      setMistakeSuggestions(await getAllMistakeSuggestions());
     }
   }
 
@@ -54,6 +63,15 @@ function AdminTabs({ password }: { password: string }) {
             suggestions={translationSuggestions}
             triggerRefresh={async () =>
               setTranslationSuggestions(await getAllTranslationSuggestions())
+            }
+          />
+        </Tab>
+        <Tab eventKey="mistakes" title="שגיאות">
+          <AdminMistakesTab
+            password={password}
+            suggestions={mistakeSuggestions}
+            triggerRefresh={async () =>
+              setMistakeSuggestions(await getAllMistakeSuggestions())
             }
           />
         </Tab>
