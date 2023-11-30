@@ -10,7 +10,8 @@ import {
   Table,
 } from "react-bootstrap";
 import { authHeader } from "./api_utils";
-import { useState } from "react";
+import { useContext, useState } from "react";
+import { PasswordContext } from "./PasswordContext";
 
 async function discardSuggestion(id: number, password: string): Promise<void> {
   await fetch("http://localhost:3000/suggest/translations", {
@@ -35,19 +36,17 @@ async function acceptSuggestion(
 
 function AcceptTranslationForm({
   suggestion,
-  password,
   onSubmit,
 }: {
   suggestion: TranslationSuggestion;
-  password: string;
   onSubmit: () => Promise<void>;
 }) {
-  const [english, setEnglish] = useState<string>(suggestion.english);
+  const password = useContext(PasswordContext);
   const [hebrew, setHebrew] = useState<string>(suggestion.hebrew);
 
   async function handleSubmit(e) {
     e.preventDefault();
-    await acceptSuggestion(suggestion.english, suggestion.hebrew, password);
+    await acceptSuggestion(suggestion.english, hebrew, password);
     await discardSuggestion(suggestion.id, password);
     await onSubmit();
   }
@@ -55,7 +54,7 @@ function AcceptTranslationForm({
   return (
     <Form noValidate onSubmit={handleSubmit}>
       <Form.Group controlId="formEnglish">
-        <Form.Label>{english}</Form.Label>
+        <Form.Label>{suggestion.english}</Form.Label>
       </Form.Group>
       <Form.Group controlId="formHebrew">
         <Form.Control
@@ -74,14 +73,13 @@ function AcceptTranslationForm({
 }
 
 function TranslationSuggestionCard({
-  password,
   suggestion,
   triggerRefresh,
 }: {
-  password: string;
   suggestion: TranslationSuggestion;
   triggerRefresh: () => Promise<void>;
 }) {
+  const password = useContext(PasswordContext);
   const [showForm, setShowForm] = useState<boolean>(false);
 
   async function handleDiscardClick() {
@@ -138,7 +136,6 @@ function TranslationSuggestionCard({
         <Modal.Body>
           <AcceptTranslationForm
             suggestion={suggestion}
-            password={password}
             onSubmit={async () => {
               setShowForm(false);
               await triggerRefresh();
@@ -151,11 +148,9 @@ function TranslationSuggestionCard({
 }
 
 export default function AdminTranslationTab({
-  password,
   suggestions,
   triggerRefresh,
 }: {
-  password: string;
   suggestions: TranslationSuggestion[];
   triggerRefresh: () => Promise<void>;
 }) {
@@ -168,7 +163,6 @@ export default function AdminTranslationTab({
           {suggestions.map((suggestion) => (
             <Carousel.Item key={suggestion.id}>
               <TranslationSuggestionCard
-                password={password}
                 suggestion={suggestion}
                 triggerRefresh={triggerRefresh}
               />

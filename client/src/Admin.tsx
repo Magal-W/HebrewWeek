@@ -5,6 +5,7 @@ import { authHeader, getAllParticipants } from "./api_utils";
 import AdminParticipantsTab from "./AdminParticipantsTab";
 import AdminTranslationTab from "./AdminTranslationsTab";
 import AdminMistakesTab from "./AdminMistakesTab";
+import { PasswordContext } from "./PasswordContext";
 
 async function getAllTranslationSuggestions(): Promise<
   TranslationSuggestion[]
@@ -47,35 +48,34 @@ function AdminTabs({ password }: { password: string }) {
 
   return (
     <div style={{ direction: "rtl" }}>
-      <Tabs defaultActiveKey="participants" onSelect={handleSelect}>
-        <Tab eventKey="participants" title="משתתפים">
-          <AdminParticipantsTab
-            password={password}
-            participants={participants}
-            triggerRefresh={async () =>
-              setParticipants(await getAllParticipants())
-            }
-          />
-        </Tab>
-        <Tab eventKey="translations" title="תרגומים">
-          <AdminTranslationTab
-            password={password}
-            suggestions={translationSuggestions}
-            triggerRefresh={async () =>
-              setTranslationSuggestions(await getAllTranslationSuggestions())
-            }
-          />
-        </Tab>
-        <Tab eventKey="mistakes" title="שגיאות">
-          <AdminMistakesTab
-            password={password}
-            suggestions={mistakeSuggestions}
-            triggerRefresh={async () =>
-              setMistakeSuggestions(await getAllMistakeSuggestions())
-            }
-          />
-        </Tab>
-      </Tabs>
+      <PasswordContext.Provider value={password}>
+        <Tabs defaultActiveKey="participants" onSelect={handleSelect}>
+          <Tab eventKey="participants" title="משתתפים">
+            <AdminParticipantsTab
+              participants={participants}
+              triggerRefresh={async () =>
+                setParticipants(await getAllParticipants())
+              }
+            />
+          </Tab>
+          <Tab eventKey="translations" title="תרגומים">
+            <AdminTranslationTab
+              suggestions={translationSuggestions}
+              triggerRefresh={async () =>
+                setTranslationSuggestions(await getAllTranslationSuggestions())
+              }
+            />
+          </Tab>
+          <Tab eventKey="mistakes" title="שגיאות">
+            <AdminMistakesTab
+              suggestions={mistakeSuggestions}
+              triggerRefresh={async () =>
+                setMistakeSuggestions(await getAllMistakeSuggestions())
+              }
+            />
+          </Tab>
+        </Tabs>
+      </PasswordContext.Provider>
     </div>
   );
 }

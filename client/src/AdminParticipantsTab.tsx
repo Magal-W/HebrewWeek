@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { Button, Form, ListGroup } from "react-bootstrap";
 import { authHeader } from "./api_utils";
+import { PasswordContext } from "./PasswordContext";
 
 async function addParticipant(
   password: string,
@@ -27,14 +28,13 @@ function ParticipantsList({ participants }: { participants: string[] }) {
 }
 
 function AddParticipantForm({
-  password,
   onSubmit,
   triggerRefresh,
 }: {
-  password: string;
   onSubmit: () => void;
   triggerRefresh: () => Promise<void>;
 }) {
+  const password = useContext(PasswordContext);
   const [participant, setParticipant] = useState<string>("");
 
   async function handleSubmit(e) {
@@ -65,21 +65,15 @@ function AddParticipantForm({
 }
 
 export default function AdminParticipantsTab({
-  password,
   participants,
   triggerRefresh,
 }: {
-  password: string;
   participants: string[];
   triggerRefresh: () => Promise<void>;
 }) {
   return (
     <>
-      <AddParticipantForm
-        password={password}
-        triggerRefresh={triggerRefresh}
-        onSubmit={() => {}}
-      />
+      <AddParticipantForm triggerRefresh={triggerRefresh} onSubmit={() => {}} />
       <ParticipantsList participants={participants} />
     </>
   );

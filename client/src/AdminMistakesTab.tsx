@@ -4,13 +4,12 @@ import {
   Carousel,
   Col,
   Container,
-  Form,
-  Modal,
   Row,
   Table,
 } from "react-bootstrap";
 import { authHeader } from "./api_utils";
-import { useState } from "react";
+import { useContext } from "react";
+import { PasswordContext } from "./PasswordContext";
 
 async function discardSuggestion(id: number, password: string): Promise<void> {
   await fetch("http://localhost:3000/suggest/mistakes", {
@@ -36,14 +35,14 @@ async function acceptSuggestion(
 }
 
 function MistakeSuggestionCard({
-  password,
   suggestion,
   triggerRefresh,
 }: {
-  password: string;
   suggestion: MistakeSuggestion;
   triggerRefresh: () => Promise<void>;
 }) {
+  const password = useContext(PasswordContext);
+
   async function handleAcceptClick() {
     await acceptSuggestion(suggestion, password);
     await discardSuggestion(suggestion.id, password);
@@ -98,11 +97,9 @@ function MistakeSuggestionCard({
 }
 
 export default function AdminMistakesTab({
-  password,
   suggestions,
   triggerRefresh,
 }: {
-  password: string;
   suggestions: MistakeSuggestion[];
   triggerRefresh: () => Promise<void>;
 }) {
@@ -115,7 +112,6 @@ export default function AdminMistakesTab({
           {suggestions.map((suggestion) => (
             <Carousel.Item key={suggestion.id}>
               <MistakeSuggestionCard
-                password={password}
                 suggestion={suggestion}
                 triggerRefresh={triggerRefresh}
               />
