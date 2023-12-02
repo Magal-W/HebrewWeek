@@ -49,6 +49,7 @@ pub fn routes() -> Router<AppState> {
         )
         .route("/known/:word", get(is_known_word))
         .route("/canonicalize", post(add_canonical))
+        .route("/canonicalize/:word", get(get_canonical))
 }
 
 #[instrument(skip(state), err)]
@@ -181,6 +182,14 @@ pub async fn add_canonical(
     authenticate(authorization).await?;
     state.db.lock().unwrap().add_canonical(payload)?;
     Ok(())
+}
+
+#[instrument(skip(state), err)]
+pub async fn get_canonical(
+    State(state): State<AppState>,
+    Path(word): Path<String>,
+) -> Result<Json<String>, AppError> {
+    Ok(Json(state.db.lock().unwrap().canonicalize_word(&word)?))
 }
 
 #[instrument(skip(state), err)]

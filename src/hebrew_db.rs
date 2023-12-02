@@ -220,6 +220,14 @@ impl HebrewDb {
         Ok(())
     }
 
+    pub fn canonicalize_word(&self, word: &str) -> Result<String> {
+        let canonical = self.canonicalize(word)?;
+        match canonical {
+            Some(w) => Ok(w.0),
+            None => Err(unknown_word_err(word)),
+        }
+    }
+
     /// The canonical (he-he) and only(!) way to create a `CanonicalWord`
     fn canonicalize(&self, word: &str) -> Result<Option<CanonicalWord>> {
         match self

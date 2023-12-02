@@ -10,9 +10,16 @@ import {
   Table,
 } from "react-bootstrap";
 import { authHeader, verifyResponse } from "./api_utils";
-import { useContext, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { PasswordContext } from "./PasswordContext";
 import { CanonicalizeUnknownWord } from "./NewCanonicalization";
+
+async function canonicalize(word: string): Promise<string> {
+  const response = verifyResponse(
+    await fetch(`http://localhost:3000/canonicalize/${word}`),
+  );
+  return await response.json();
+}
 
 async function discardSuggestion(id: number, password: string): Promise<void> {
   verifyResponse(
@@ -48,6 +55,11 @@ function AcceptTranslationForm({
 }) {
   const password = useContext(PasswordContext);
   const [hebrew, setHebrew] = useState<string>(suggestion.hebrew);
+  const [canonicalEnglish, setCanonicalEnglish] = useState<string>("");
+
+  useEffect(() => {
+    canonicalize(suggestion.english).then((r) => setCanonicalEnglish(r));
+  }, [suggestion]);
 
   async function handleSubmit(e: React.SyntheticEvent) {
     e.preventDefault();
@@ -59,7 +71,7 @@ function AcceptTranslationForm({
   return (
     <Form noValidate onSubmit={handleSubmit}>
       <Form.Group controlId="formEnglish">
-        <Form.Label>{suggestion.english}</Form.Label>
+        <Form.Label>{canonicalEnglish}</Form.Label>
       </Form.Group>
       <Form.Group controlId="formHebrew">
         <Form.Control
@@ -111,9 +123,7 @@ function TranslationSuggestionCard({
                       <td>
                         <CanonicalizeUnknownWord word={suggestion.english} />
                       </td>
-                      <td>
-                        <CanonicalizeUnknownWord word={suggestion.hebrew} />
-                      </td>
+                      <td>{suggestion.hebrew}</td>
                     </tr>
                   </tbody>
                 </Table>
