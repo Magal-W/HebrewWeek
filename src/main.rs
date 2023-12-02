@@ -9,8 +9,6 @@ use crate::api::AppState;
 use hyper::Method;
 use std::net::SocketAddr;
 use tower_http::cors::{Any, CorsLayer};
-use tower_http::trace::TraceLayer;
-use tracing_subscriber::fmt;
 use tracing_subscriber::fmt::init;
 
 #[tokio::main]

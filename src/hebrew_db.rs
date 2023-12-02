@@ -141,6 +141,17 @@ impl HebrewDb {
     }
 
     pub fn discard_mistake_suggestion(&self, suggestion_id: i64) -> Result<()> {
+        let suggestion: MistakeSuggestion = self
+            .0
+            .prepare("SELECT * FROM MistakesSuggestions WHERE ROWID = :id")?
+            .query_row([suggestion_id], |row| {
+                Ok(MistakeSuggestion {
+                    id: 0,
+                    name: row.get("Name")?,
+                    mistake: row.get("Mistake")?,
+                    context: row.get("Context")?,
+                })
+            })?;
         ensure!(
             self.0
                 .prepare("DELETE FROM MistakesSuggestions WHERE ROWID = :id")?
@@ -148,6 +159,9 @@ impl HebrewDb {
                 == 1,
             format!("Failed to delete mistake suggestion with id {suggestion_id}")
         );
+        self.0
+            .prepare("INSERT INTO MistakesSuggestionsArchive VALUES(:name, :mistake, :context)")?
+            .insert([suggestion.name, suggestion.mistake, suggestion.context])?;
         Ok(())
     }
 
@@ -233,6 +247,16 @@ impl HebrewDb {
         Self::create_table(
             &self.0,
             "MistakesSuggestions",
+            [],
+            [
+                ("Name", DbFieldType::String),
+                ("Mistake", DbFieldType::String),
+                ("Context", DbFieldType::String),
+            ],
+        )?;
+        Self::create_table(
+            &self.0,
+            "MistakesSuggestionsArchive",
             [],
             [
                 ("Name", DbFieldType::String),
