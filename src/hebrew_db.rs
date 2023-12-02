@@ -206,6 +206,17 @@ impl HebrewDb {
     }
 
     pub fn add_canonical(&self, request: CanonicalRequest) -> Result<()> {
+        self.add_canonical_imp(&request)?;
+
+        let tertiary_request = CanonicalRequest {
+            word: request.canonical.clone(),
+            canonical: request.canonical.clone(),
+        };
+        self.add_canonical_imp(&tertiary_request)?;
+        Ok(())
+    }
+
+    fn add_canonical_imp(&self, request: &CanonicalRequest) -> Result<()> {
         let rows_changed = self
             .0
             .prepare("INSERT OR REPLACE INTO CanonicalWords VALUES(:word, :canonical)")?
