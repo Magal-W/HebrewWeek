@@ -9,17 +9,19 @@ import {
   Row,
   Table,
 } from "react-bootstrap";
-import { authHeader } from "./api_utils";
+import { authHeader, verifyResponse } from "./api_utils";
 import { useContext, useState } from "react";
 import { PasswordContext } from "./PasswordContext";
 import { CanonicalizeUnknownWord } from "./NewCanonicalization";
 
 async function discardSuggestion(id: number, password: string): Promise<void> {
-  await fetch("http://localhost:3000/suggest/translations", {
-    method: "DELETE",
-    headers: { ...authHeader(password), "Content-Type": "application/json" },
-    body: JSON.stringify(id),
-  });
+  verifyResponse(
+    await fetch("http://localhost:3000/suggest/translations", {
+      method: "DELETE",
+      headers: { ...authHeader(password), "Content-Type": "application/json" },
+      body: JSON.stringify(id),
+    }),
+  );
 }
 
 async function acceptSuggestion(
@@ -28,11 +30,13 @@ async function acceptSuggestion(
   password: string,
 ): Promise<void> {
   const translation: Translation = { english: english, hebrew: hebrew };
-  await fetch("http://localhost:3000/translations", {
-    method: "POST",
-    headers: { ...authHeader(password), "Content-Type": "application/json" },
-    body: JSON.stringify(translation),
-  });
+  verifyResponse(
+    await fetch("http://localhost:3000/translations", {
+      method: "POST",
+      headers: { ...authHeader(password), "Content-Type": "application/json" },
+      body: JSON.stringify(translation),
+    }),
+  );
 }
 
 function AcceptTranslationForm({

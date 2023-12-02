@@ -10,26 +10,32 @@ import {
   Stack,
   Table,
 } from "react-bootstrap";
-import { isKnownWord } from "./api_utils";
+import { isKnownWord, verifyResponse } from "./api_utils";
 
 async function getAllTranslations(): Promise<Translation[]> {
-  const response = await fetch("http://localhost:3000/translations");
+  const response = verifyResponse(
+    await fetch("http://localhost:3000/translations"),
+  );
   return await response.json();
 }
 
 async function translate(word: string): Promise<string[]> {
-  const response = await fetch(`http://localhost:3000/translate/${word}`);
+  const response = verifyResponse(
+    await fetch(`http://localhost:3000/translate/${word}`),
+  );
   return await response.json();
 }
 
 async function suggestTranslation(
   suggestion: TranslationSuggestion,
 ): Promise<void> {
-  await fetch("http://localhost:3000/suggest/translations", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(suggestion),
-  });
+  verifyResponse(
+    await fetch("http://localhost:3000/suggest/translations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(suggestion),
+    }),
+  );
 }
 
 function UnknownWordLabel({ english }: { english: string }) {

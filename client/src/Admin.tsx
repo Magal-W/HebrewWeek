@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { Button, Form, Modal, Tab, Tabs } from "react-bootstrap";
-import { authHeader, getAllParticipants } from "./api_utils";
+import { authHeader, getAllParticipants, verifyResponse } from "./api_utils";
 import AdminParticipantsTab from "./AdminParticipantsTab";
 import AdminTranslationTab from "./AdminTranslationsTab";
 import AdminMistakesTab from "./AdminMistakesTab";
@@ -11,12 +11,16 @@ import AdminCanonicalizationTab from "./NewCanonicalization";
 async function getAllTranslationSuggestions(): Promise<
   TranslationSuggestion[]
 > {
-  const response = await fetch("http://localhost:3000/suggest/translations");
+  const response = verifyResponse(
+    await fetch("http://localhost:3000/suggest/translations"),
+  );
   return await response.json();
 }
 
 async function getAllMistakeSuggestions(): Promise<MistakeSuggestion[]> {
-  const response = await fetch("http://localhost:3000/suggest/mistakes");
+  const response = verifyResponse(
+    await fetch("http://localhost:3000/suggest/mistakes"),
+  );
   return await response.json();
 }
 
@@ -89,10 +93,12 @@ export default function Admin() {
   const [password, setPassword] = useState<string>("");
 
   async function handleClick() {
-    const response = await fetch("http://localhost:3000/auth", {
-      method: "GET",
-      headers: authHeader(password),
-    });
+    const response = verifyResponse(
+      await fetch("http://localhost:3000/auth", {
+        method: "GET",
+        headers: authHeader(password),
+      }),
+    );
     const res: boolean = await response.json();
     setShow(!res);
     if (!res) {

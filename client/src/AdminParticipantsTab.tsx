@@ -1,20 +1,22 @@
 import { useContext, useState } from "react";
 import { Button, Form, ListGroup } from "react-bootstrap";
-import { authHeader } from "./api_utils";
+import { authHeader, verifyResponse } from "./api_utils";
 import { PasswordContext } from "./PasswordContext";
 
 async function addParticipant(
   password: string,
   participant: string,
 ): Promise<void> {
-  await fetch("http://localhost:3000/participants", {
-    method: "POST",
-    headers: {
-      ...authHeader(password),
-      ...{ "Content-Type": "application/json" },
-    },
-    body: JSON.stringify(participant),
-  });
+  verifyResponse(
+    await fetch("http://localhost:3000/participants", {
+      method: "POST",
+      headers: {
+        ...authHeader(password),
+        ...{ "Content-Type": "application/json" },
+      },
+      body: JSON.stringify(participant),
+    }),
+  );
 }
 
 function ParticipantsList({ participants }: { participants: string[] }) {

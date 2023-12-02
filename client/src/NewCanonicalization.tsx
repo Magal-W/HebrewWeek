@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react";
-import { authHeader, isKnownWord } from "./api_utils";
+import { authHeader, isKnownWord, verifyResponse } from "./api_utils";
 import { PasswordContext } from "./PasswordContext";
 import { Button, Form, Modal } from "react-bootstrap";
 
@@ -9,11 +9,13 @@ async function addCanonicalization(
   password: string,
 ): Promise<void> {
   const request: CanonicalRequest = { word: word, canonical: canonical };
-  await fetch("http://localhost:3000/canonicalize", {
-    method: "POST",
-    headers: { ...authHeader(password), "Content-Type": "application/json" },
-    body: JSON.stringify(request),
-  });
+  verifyResponse(
+    await fetch("http://localhost:3000/canonicalize", {
+      method: "POST",
+      headers: { ...authHeader(password), "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    }),
+  );
 }
 
 export function NewCanonicalizationForm({

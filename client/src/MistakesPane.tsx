@@ -9,17 +9,22 @@ import {
   Row,
   Table,
 } from "react-bootstrap";
+import { verifyResponse } from "./api_utils";
 
 async function suggestMistake(report: MistakeSuggestion): Promise<void> {
-  await fetch("http://localhost:3000/suggest/mistakes", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(report),
-  });
+  verifyResponse(
+    await fetch("http://localhost:3000/suggest/mistakes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(report),
+    }),
+  );
 }
 
 async function getMistakes(name: string): Promise<PersonMistakes> {
-  const response = await fetch(`http://localhost:3000/mistakes/${name}`);
+  const response = verifyResponse(
+    await fetch(`http://localhost:3000/mistakes/${name}`),
+  );
   return await response.json();
 }
 
