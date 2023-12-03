@@ -220,7 +220,7 @@ impl HebrewDb {
         let rows_changed = self
             .0
             .prepare("INSERT OR REPLACE INTO CanonicalWords VALUES(:word, :canonical)")?
-            .execute([&request.word, &request.canonical])?;
+            .execute([&request.word.to_lowercase(), &request.canonical])?;
         ensure!(
             rows_changed == 1 || rows_changed == 2,
             format!(
@@ -244,8 +244,9 @@ impl HebrewDb {
         match self
             .0
             .prepare("SELECT Canonical FROM CanonicalWords WHERE Word = :word")?
-            .query_row([word], |row| Ok(CanonicalWord(row.get("Canonical")?)))
-        {
+            .query_row([word.to_lowercase()], |row| {
+                Ok(CanonicalWord(row.get("Canonical")?))
+            }) {
             Ok(canonical) => Ok(Some(canonical)),
             Err(QueryReturnedNoRows) => Ok(None),
             Err(err) => Err(err.into()),
