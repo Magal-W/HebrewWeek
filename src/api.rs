@@ -6,11 +6,12 @@ use crate::types::{
     TranslationSuggestion,
 };
 use axum::extract::Path;
-use axum::headers::authorization::Basic;
-use axum::headers::Authorization;
 use axum::routing::{delete, get, post};
+use axum::Router;
 use axum::{extract::State, Json};
-use axum::{Router, TypedHeader};
+use axum_extra::headers::authorization::Basic;
+use axum_extra::headers::Authorization;
+use axum_extra::TypedHeader;
 use std::sync::{Arc, Mutex};
 use tracing::instrument;
 
