@@ -8,7 +8,7 @@ async function addParticipant(
   participant: string,
 ): Promise<void> {
   verifyResponse(
-    await fetch("http://localhost:3000/participants", {
+    await fetch("/api/participants", {
       method: "POST",
       headers: {
         ...authHeader(password),

@@ -10,7 +10,7 @@ async function addCanonicalization(
 ): Promise<void> {
   const request: CanonicalRequest = { word: word, canonical: canonical };
   verifyResponse(
-    await fetch("http://localhost:3000/canonicalize", {
+    await fetch("/api/canonicalize", {
       method: "POST",
       headers: { ...authHeader(password), "Content-Type": "application/json" },
       body: JSON.stringify(request),

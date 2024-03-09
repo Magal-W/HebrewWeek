@@ -1,0 +1,21 @@
+version: '3.4'
+
+services:
+  client:
+    image: client
+    build:
+      context: client
+      dockerfile: ./Dockerfile
+  backend:
+    build:
+      dockerfile: ./Dockerfile
+    volumes:
+      - ./p.ass:/p.ass:ro
+      - ./hebrew.db:/hebrew.db
+  nginx:
+    image: nginx:latest
+    ports:
+      - 80:80
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+
