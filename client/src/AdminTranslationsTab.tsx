@@ -16,14 +16,14 @@ import { CanonicalizeUnknownWord } from "./NewCanonicalization";
 
 async function canonicalize(word: string): Promise<string> {
   const response = verifyResponse(
-    await fetch(`http://localhost:3000/canonicalize/${word}`),
+    await fetch(`/api/canonicalize/${word}`),
   );
   return await response.json();
 }
 
 async function discardSuggestion(id: number, password: string): Promise<void> {
   verifyResponse(
-    await fetch("http://localhost:3000/suggest/translations", {
+    await fetch("/api/suggest/translations", {
       method: "DELETE",
       headers: { ...authHeader(password), "Content-Type": "application/json" },
       body: JSON.stringify(id),
@@ -38,7 +38,7 @@ async function acceptSuggestion(
 ): Promise<void> {
   const translation: Translation = { english: english, hebrew: hebrew };
   verifyResponse(
-    await fetch("http://localhost:3000/translations", {
+    await fetch("/api/translations", {
       method: "POST",
       headers: { ...authHeader(password), "Content-Type": "application/json" },
       body: JSON.stringify(translation),

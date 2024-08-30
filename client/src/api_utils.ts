@@ -1,13 +1,13 @@
 export async function getAllParticipants(): Promise<string[]> {
   const response = verifyResponse(
-    await fetch("http://localhost:3000/participants"),
+    await fetch("/api/participants"),
   );
   return await response.json();
 }
 
 export async function isKnownWord(word: string): Promise<boolean> {
   const response = verifyResponse(
-    await fetch(`http://localhost:3000/known/${word}`),
+    await fetch(`/api/known/${word}`),
   );
   return await response.json();
 }

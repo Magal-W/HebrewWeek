@@ -12,14 +12,14 @@ async function getAllTranslationSuggestions(): Promise<
   TranslationSuggestion[]
 > {
   const response = verifyResponse(
-    await fetch("http://localhost:3000/suggest/translations"),
+    await fetch("/api/suggest/translations"),
   );
   return await response.json();
 }
 
 async function getAllMistakeSuggestions(): Promise<MistakeSuggestion[]> {
   const response = verifyResponse(
-    await fetch("http://localhost:3000/suggest/mistakes"),
+    await fetch("/api/suggest/mistakes"),
   );
   return await response.json();
 }
@@ -94,7 +94,7 @@ export default function Admin() {
 
   async function handleClick() {
     const response = verifyResponse(
-      await fetch("http://localhost:3000/auth", {
+      await fetch("/api/auth", {
         method: "GET",
         headers: authHeader(password),
       }),

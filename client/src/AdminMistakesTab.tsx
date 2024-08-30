@@ -14,7 +14,7 @@ import { CanonicalizeUnknownWord } from "./NewCanonicalization";
 
 async function discardSuggestion(id: number, password: string): Promise<void> {
   verifyResponse(
-    await fetch("http://localhost:3000/suggest/mistakes", {
+    await fetch("/api/suggest/mistakes", {
       method: "DELETE",
       headers: { ...authHeader(password), "Content-Type": "application/json" },
       body: JSON.stringify(id),
@@ -31,7 +31,7 @@ async function acceptSuggestion(
     mistake: suggestion.mistake,
   };
   verifyResponse(
-    await fetch("http://localhost:3000/mistakes", {
+    await fetch("/api/mistakes", {
       method: "POST",
       headers: { ...authHeader(password), "Content-Type": "application/json" },
       body: JSON.stringify(translation),

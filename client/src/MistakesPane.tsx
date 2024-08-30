@@ -13,7 +13,7 @@ import { verifyResponse } from "./api_utils";
 
 async function suggestMistake(report: MistakeSuggestion): Promise<void> {
   verifyResponse(
-    await fetch("http://localhost:3000/suggest/mistakes", {
+    await fetch("/api/suggest/mistakes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(report),
@@ -23,7 +23,7 @@ async function suggestMistake(report: MistakeSuggestion): Promise<void> {
 
 async function getMistakes(name: string): Promise<PersonMistakes> {
   const response = verifyResponse(
-    await fetch(`http://localhost:3000/mistakes/${name}`),
+    await fetch(`/api/mistakes/${name}`),
   );
   return await response.json();
 }
