@@ -14,14 +14,14 @@ import { isKnownWord, verifyResponse } from "./api_utils";
 
 async function getAllTranslations(): Promise<Translation[]> {
   const response = verifyResponse(
-    await fetch("http://localhost:3000/translations"),
+    await fetch("/api/translations"),
   );
   return await response.json();
 }
 
 async function translate(word: string): Promise<string[]> {
   const response = verifyResponse(
-    await fetch(`http://localhost:3000/translate/${word}`),
+    await fetch(`/api/translate/${word}`),
   );
   return await response.json();
 }
@@ -30,7 +30,7 @@ async function suggestTranslation(
   suggestion: TranslationSuggestion,
 ): Promise<void> {
   verifyResponse(
-    await fetch("http://localhost:3000/suggest/translations", {
+    await fetch("/api/suggest/translations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(suggestion),
