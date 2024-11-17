@@ -1,9 +1,0 @@
-version: "3"
-services:
-  dev-docker:
-    container_name: hebrew-dev
-    tty: true  
-    image: hebrew-dev:latest
-    entrypoint: /bin/bash
-    volumes:
-      - .:/home/user/HebrewWeek

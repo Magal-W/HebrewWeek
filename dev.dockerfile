@@ -1,4 +1,5 @@
 FROM rust:bullseye AS helix_builder
+RUN git config --global http.postBuffer 314572800
 RUN git clone https://github.com/helix-editor/helix.git /helix
 WORKDIR /helix
 RUN cargo install --path helix-term --locked
@@ -27,7 +28,12 @@ USER user
 RUN mkdir /home/user/HebrewWeek
 WORKDIR /home/user/HebrewWeek
 COPY . .
+USER root
 
+RUN chown -R user:users .
+RUN chown -R user:users ./*
+RUN chown -R user:users ./**/*
+USER user
 RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
 ENV PATH="/home/user/.cargo/bin:${PATH}"
 
@@ -50,4 +56,5 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry/ \
 
 WORKDIR /home/user
 
+USER user
 ENTRYPOINT /bin/bash
