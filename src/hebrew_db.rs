@@ -58,7 +58,7 @@ impl HebrewDb {
             })?
             .collect::<Result<Vec<_>, _>>()?
             .into_iter()
-            .group_by(|element| element.name.clone());
+            .chunk_by(|element| element.name.clone());
         let mistakes = mistakes_group
             .into_iter()
             .map(|(key, group)| PersonMistakes {
