@@ -62,11 +62,25 @@ pub struct Translation {
 }
 
 #[tsync]
+#[derive(Debug, Deserialize)]
+pub struct TranslationAddition {
+    pub translation: Translation,
+    pub suggestor: String,
+}
+
+#[tsync]
 #[derive(Debug, Deserialize, Serialize)]
 pub struct TranslationSuggestion {
     pub id: i64,
     pub english: String,
     pub hebrew: String,
+}
+
+#[tsync]
+#[derive(Debug, Serialize)]
+pub struct SuggestedTranslation {
+    pub translation: TranslationSuggestion,
+    pub suggestor: String,
 }
 
 #[tsync]

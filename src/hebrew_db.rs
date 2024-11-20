@@ -4,7 +4,8 @@ use rusqlite::{named_params, Connection, Error::QueryReturnedNoRows};
 
 use crate::types::{
     CanonicalRequest, CountedMistake, DiscardMistakeSuggestion, MistakeReport, MistakeSuggestion,
-    PersonMistake, PersonMistakes, SuggestedMistake, Translation, TranslationSuggestion,
+    PersonMistake, PersonMistakes, SuggestedMistake, SuggestedTranslation, Translation,
+    TranslationAddition, TranslationSuggestion,
 };
 
 /// Represents a canonical representation (dictionary choice) that can be stored in "source-of-truth" tables
@@ -111,10 +112,14 @@ impl HebrewDb {
             .map_err(|err| err.into())
     }
 
-    pub fn suggest_translation(&self, suggestion: TranslationSuggestion) -> Result<i64> {
+    pub fn suggest_translation(&self, suggestion: SuggestedTranslation) -> Result<i64> {
         self.0
-            .prepare("INSERT INTO TranslationsSuggestions VALUES(:english, :hebrew)")?
-            .insert([suggestion.english, suggestion.hebrew])
+            .prepare("INSERT INTO TranslationsSuggestions VALUES(:english, :hebrew, :suggestor)")?
+            .insert([
+                suggestion.translation.english,
+                suggestion.translation.hebrew,
+                suggestion.suggestor,
+            ])
             .map_err(|err| err.into())
     }
 
@@ -131,11 +136,15 @@ impl HebrewDb {
         Ok(translations)
     }
 
-    pub fn add_translation(&self, translation: Translation) -> Result<()> {
-        let canonical = self.canonicalize(&translation.english)?;
+    pub fn add_translation(&self, translation: TranslationAddition) -> Result<()> {
+        let canonical = self.canonicalize(&translation.translation.english)?;
         match canonical {
-            Some(canonical) => self.add_translation_canonical(canonical, &translation.hebrew),
-            None => Err(unknown_word_err(&translation.english)),
+            Some(canonical) => self.add_translation_canonical(
+                canonical,
+                &translation.translation.hebrew,
+                &translation.suggestor,
+            ),
+            None => Err(unknown_word_err(&translation.translation.english)),
         }
     }
 
@@ -214,15 +223,17 @@ impl HebrewDb {
             .map_err(|err| err.into())
     }
 
-    pub fn all_translation_suggestions(&self) -> Result<Vec<TranslationSuggestion>> {
+    pub fn all_translation_suggestions(&self) -> Result<Vec<SuggestedTranslation>> {
         self.0
             .prepare("SELECT ROWID,* FROM TranslationsSuggestions")?
             .query_map([], |row| {
-                Ok(TranslationSuggestion {
-                    id: row.get("ROWID")?,
-                    english: row.get("English")?,
-                    hebrew: row.get("Hebrew")?,
-                    // suggestor: row.get("Suggestor")?,
+                Ok(SuggestedTranslation {
+                    translation: TranslationSuggestion {
+                        id: row.get("ROWID")?,
+                        english: row.get("English")?,
+                        hebrew: row.get("Hebrew")?,
+                    },
+                    suggestor: row.get("Suggestor")?,
                 })
             })?
             .try_collect()
@@ -318,7 +329,7 @@ impl HebrewDb {
                 ("English", DbFieldType::String),
                 ("Hebrew", DbFieldType::String),
             ],
-            [], // [("Suggestor", DbFieldType::String)],
+            [("Suggestor", DbFieldType::String)],
         )?;
         Self::create_table(
             &self.0,
@@ -327,7 +338,7 @@ impl HebrewDb {
                 ("English", DbFieldType::String),
                 ("Hebrew", DbFieldType::String),
             ],
-            [], // [("Suggestor", DbFieldType::String)],
+            [("Suggestor", DbFieldType::String)],
         )?;
         Self::create_table(
             &self.0,
@@ -406,11 +417,16 @@ impl HebrewDb {
             .map_err(|err| err.into())
     }
 
-    fn add_translation_canonical(&self, english: CanonicalWord, hebrew: &str) -> Result<()> {
+    fn add_translation_canonical(
+        &self,
+        english: CanonicalWord,
+        hebrew: &str,
+        suggestor: &str,
+    ) -> Result<()> {
         let rows_changed = self
             .0
-            .prepare("INSERT OR REPLACE INTO Translations VALUES(:english, :hebrew)")?
-            .execute([&english.0, hebrew])?;
+            .prepare("INSERT OR REPLACE INTO Translations VALUES(:english, :hebrew, :suggestor)")?
+            .execute([&english.0, hebrew, suggestor])?;
         ensure!(
             rows_changed == 1 || rows_changed == 2,
             format!("Failed to add translation of {} as {}", english.0, hebrew)

@@ -15,9 +15,7 @@ import { PasswordContext } from "./PasswordContext";
 import { CanonicalizeUnknownWord } from "./NewCanonicalization";
 
 async function canonicalize(word: string): Promise<string> {
-  const response = verifyResponse(
-    await fetch(`/api/canonicalize/${word}`),
-  );
+  const response = verifyResponse(await fetch(`/api/canonicalize/${word}`));
   return await response.json();
 }
 
@@ -34,14 +32,19 @@ async function discardSuggestion(id: number, password: string): Promise<void> {
 async function acceptSuggestion(
   english: string,
   hebrew: string,
+  suggestor: string,
   password: string,
 ): Promise<void> {
   const translation: Translation = { english: english, hebrew: hebrew };
+  const translation_addition: TranslationAddition = {
+    translation: translation,
+    suggestor: suggestor,
+  };
   verifyResponse(
     await fetch("/api/translations", {
       method: "POST",
       headers: { ...authHeader(password), "Content-Type": "application/json" },
-      body: JSON.stringify(translation),
+      body: JSON.stringify(translation_addition),
     }),
   );
 }
@@ -50,21 +53,28 @@ function AcceptTranslationForm({
   suggestion,
   onSubmit,
 }: {
-  suggestion: TranslationSuggestion;
+  suggestion: SuggestedTranslation;
   onSubmit: () => Promise<void>;
 }) {
   const password = useContext(PasswordContext);
-  const [hebrew, setHebrew] = useState<string>(suggestion.hebrew);
+  const [hebrew, setHebrew] = useState<string>(suggestion.translation.hebrew);
   const [canonicalEnglish, setCanonicalEnglish] = useState<string>("");
 
   useEffect(() => {
-    canonicalize(suggestion.english).then((r) => setCanonicalEnglish(r));
+    canonicalize(suggestion.translation.english).then((r) =>
+      setCanonicalEnglish(r),
+    );
   }, [suggestion]);
 
   async function handleSubmit(e: React.SyntheticEvent) {
     e.preventDefault();
-    await acceptSuggestion(suggestion.english, hebrew, password);
-    await discardSuggestion(suggestion.id, password);
+    await acceptSuggestion(
+      suggestion.translation.english,
+      hebrew,
+      suggestion.suggestor,
+      password,
+    );
+    await discardSuggestion(suggestion.translation.id, password);
     await onSubmit();
   }
 
@@ -93,14 +103,14 @@ function TranslationSuggestionCard({
   suggestion,
   triggerRefresh,
 }: {
-  suggestion: TranslationSuggestion;
+  suggestion: SuggestedTranslation;
   triggerRefresh: () => Promise<void>;
 }) {
   const password = useContext(PasswordContext);
   const [showForm, setShowForm] = useState<boolean>(false);
 
   async function handleDiscardClick() {
-    await discardSuggestion(suggestion.id, password);
+    await discardSuggestion(suggestion.translation.id, password);
     await triggerRefresh();
   }
 
@@ -116,14 +126,18 @@ function TranslationSuggestionCard({
                     <tr>
                       <th>אנגלית</th>
                       <th>עברית</th>
+                      <th>מחדש</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr>
                       <td>
-                        <CanonicalizeUnknownWord word={suggestion.english} />
+                        <CanonicalizeUnknownWord
+                          word={suggestion.translation.english}
+                        />
                       </td>
-                      <td>{suggestion.hebrew}</td>
+                      <td>{suggestion.translation.hebrew}</td>
+                      <td>{suggestion.suggestor}</td>
                     </tr>
                   </tbody>
                 </Table>
@@ -170,7 +184,7 @@ export default function AdminTranslationTab({
   suggestions,
   triggerRefresh,
 }: {
-  suggestions: TranslationSuggestion[];
+  suggestions: SuggestedTranslation[];
   triggerRefresh: () => Promise<void>;
 }) {
   return (
@@ -180,7 +194,7 @@ export default function AdminTranslationTab({
       ) : (
         <Carousel wrap={false}>
           {suggestions.map((suggestion) => (
-            <Carousel.Item key={suggestion.id}>
+            <Carousel.Item key={suggestion.translation.id}>
               <TranslationSuggestionCard
                 suggestion={suggestion}
                 triggerRefresh={triggerRefresh}

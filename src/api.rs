@@ -3,7 +3,8 @@ use crate::error::AppError;
 use crate::hebrew_db::HebrewDb;
 use crate::types::{
     CanonicalRequest, DiscardMistakeSuggestion, MistakeReport, MistakeSuggestion, PersonMistake,
-    PersonMistakes, SuggestedMistake, Translation, TranslationSuggestion,
+    PersonMistakes, SuggestedMistake, SuggestedTranslation, Translation, TranslationAddition,
+    TranslationSuggestion,
 };
 use axum::extract::Path;
 use axum::routing::{delete, get, post};
@@ -114,7 +115,7 @@ pub async fn all_translations(
 pub async fn add_translation(
     State(state): State<AppState>,
     TypedHeader(authorization): TypedHeader<Authorization<Basic>>,
-    Json(payload): Json<Translation>,
+    Json(payload): Json<TranslationAddition>,
 ) -> Result<(), AppError> {
     authenticate(authorization).await?;
     state.db.lock().unwrap().add_translation(payload)?;
@@ -124,9 +125,16 @@ pub async fn add_translation(
 #[instrument(skip(state), err)]
 pub async fn suggest_translation(
     State(state): State<AppState>,
+    XForwardedFor(ips): XForwardedFor,
     Json(payload): Json<TranslationSuggestion>,
 ) -> Result<Json<i64>, AppError> {
-    Ok(Json(state.db.lock().unwrap().suggest_translation(payload)?))
+    let suggestor = reporter(ips);
+    Ok(Json(state.db.lock().unwrap().suggest_translation(
+        SuggestedTranslation {
+            translation: payload,
+            suggestor,
+        },
+    )?))
 }
 
 #[instrument(skip(state), err)]
@@ -177,7 +185,7 @@ pub async fn all_mistake_suggestions(
 #[instrument(skip(state), err)]
 pub async fn all_translation_suggestions(
     State(state): State<AppState>,
-) -> Result<Json<Vec<TranslationSuggestion>>, AppError> {
+) -> Result<Json<Vec<SuggestedTranslation>>, AppError> {
     Ok(Json(
         state.db.lock().unwrap().all_translation_suggestions()?,
     ))

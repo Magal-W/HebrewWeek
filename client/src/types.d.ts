@@ -42,10 +42,20 @@ interface Translation {
   hebrew: string;
 }
 
+interface TranslationAddition {
+  translation: Translation;
+  suggestor: string;
+}
+
 interface TranslationSuggestion {
   id: number;
   english: string;
   hebrew: string;
+}
+
+interface SuggestedTranslation {
+  translation: TranslationSuggestion;
+  suggestor: string;
 }
 
 interface CanonicalRequest {

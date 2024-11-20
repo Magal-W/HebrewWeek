@@ -8,9 +8,7 @@ import AdminMistakesTab from "./AdminMistakesTab";
 import { PasswordContext } from "./PasswordContext";
 import AdminCanonicalizationTab from "./NewCanonicalization";
 
-async function getAllTranslationSuggestions(): Promise<
-  TranslationSuggestion[]
-> {
+async function getAllTranslationSuggestions(): Promise<SuggestedTranslation[]> {
   const response = verifyResponse(await fetch("/api/suggest/translations"));
   return await response.json();
 }
@@ -23,7 +21,7 @@ async function getAllMistakeSuggestions(): Promise<SuggestedMistake[]> {
 function AdminTabs({ password }: { password: string }) {
   const [participants, setParticipants] = useState<string[]>([]);
   const [translationSuggestions, setTranslationSuggestions] = useState<
-    TranslationSuggestion[]
+    SuggestedTranslation[]
   >([]);
   const [mistakeSuggestions, setMistakeSuggestions] = useState<
     SuggestedMistake[]
