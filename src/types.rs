@@ -2,6 +2,7 @@ use serde_derive::Deserialize;
 use serde_derive::Serialize;
 use tsync::tsync;
 
+// TODO serialize?
 #[tsync]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MistakeReport {
@@ -16,6 +17,20 @@ pub struct MistakeSuggestion {
     pub name: String,
     pub mistake: String,
     pub context: String,
+}
+
+#[tsync]
+#[derive(Debug, Serialize)]
+pub struct SuggestedMistake {
+    pub mistake: MistakeSuggestion,
+    pub reporter: String,
+}
+
+#[tsync]
+#[derive(Debug, Deserialize)]
+pub struct DiscardMistakeSuggestion {
+    pub id: i64,
+    pub accepted: bool,
 }
 
 #[tsync]

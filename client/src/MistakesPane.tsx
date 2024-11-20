@@ -22,9 +22,7 @@ async function suggestMistake(report: MistakeSuggestion): Promise<void> {
 }
 
 async function getMistakes(name: string): Promise<PersonMistakes> {
-  const response = verifyResponse(
-    await fetch(`/api/mistakes/${name}`),
-  );
+  const response = verifyResponse(await fetch(`/api/mistakes/${name}`));
   return await response.json();
 }
 

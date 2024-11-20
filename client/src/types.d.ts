@@ -12,6 +12,16 @@ interface MistakeSuggestion {
   context: string;
 }
 
+interface SuggestedMistake {
+  mistake: MistakeSuggestion;
+  reporter: string;
+}
+
+interface DiscardMistakeSuggestion {
+  id: number;
+  accepted: boolean;
+}
+
 interface CountedMistake {
   mistake: string;
   count: number;

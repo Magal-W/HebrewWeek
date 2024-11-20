@@ -12,12 +12,15 @@ import { useContext } from "react";
 import { PasswordContext } from "./PasswordContext";
 import { CanonicalizeUnknownWord } from "./NewCanonicalization";
 
-async function discardSuggestion(id: number, password: string): Promise<void> {
+async function discardSuggestion(
+  suggestion: DiscardMistakeSuggestion,
+  password: string,
+): Promise<void> {
   verifyResponse(
     await fetch("/api/suggest/mistakes", {
       method: "DELETE",
       headers: { ...authHeader(password), "Content-Type": "application/json" },
-      body: JSON.stringify(id),
+      body: JSON.stringify(suggestion),
     }),
   );
 }
@@ -26,7 +29,7 @@ async function acceptSuggestion(
   suggestion: MistakeSuggestion,
   password: string,
 ): Promise<void> {
-  const translation: MistakeReport = {
+  const mistake: MistakeReport = {
     name: suggestion.name,
     mistake: suggestion.mistake,
   };
@@ -34,7 +37,7 @@ async function acceptSuggestion(
     await fetch("/api/mistakes", {
       method: "POST",
       headers: { ...authHeader(password), "Content-Type": "application/json" },
-      body: JSON.stringify(translation),
+      body: JSON.stringify(mistake),
     }),
   );
 }
@@ -43,19 +46,25 @@ function MistakeSuggestionCard({
   suggestion,
   triggerRefresh,
 }: {
-  suggestion: MistakeSuggestion;
+  suggestion: SuggestedMistake;
   triggerRefresh: () => Promise<void>;
 }) {
   const password = useContext(PasswordContext);
 
   async function handleAcceptClick() {
-    await acceptSuggestion(suggestion, password);
-    await discardSuggestion(suggestion.id, password);
+    await acceptSuggestion(suggestion.mistake, password);
+    await discardSuggestion(
+      { id: suggestion.mistake.id, accepted: true },
+      password,
+    );
     await triggerRefresh();
   }
 
   async function handleDiscardClick() {
-    await discardSuggestion(suggestion.id, password);
+    await discardSuggestion(
+      { id: suggestion.mistake.id, accepted: false },
+      password,
+    );
     await triggerRefresh();
   }
 
@@ -72,15 +81,19 @@ function MistakeSuggestionCard({
                       <th>משתתף</th>
                       <th>שגיאה</th>
                       <th>הקשר</th>
+                      <th>מדווח</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr>
-                      <td>{suggestion.name}</td>
+                      <td>{suggestion.mistake.name}</td>
                       <td>
-                        <CanonicalizeUnknownWord word={suggestion.mistake} />
+                        <CanonicalizeUnknownWord
+                          word={suggestion.mistake.mistake}
+                        />
                       </td>
-                      <td>{suggestion.context}</td>
+                      <td>{suggestion.mistake.context}</td>
+                      <td>{suggestion.reporter}</td>
                     </tr>
                   </tbody>
                 </Table>
@@ -109,7 +122,7 @@ export default function AdminMistakesTab({
   suggestions,
   triggerRefresh,
 }: {
-  suggestions: MistakeSuggestion[];
+  suggestions: SuggestedMistake[];
   triggerRefresh: () => Promise<void>;
 }) {
   return (
@@ -119,7 +132,7 @@ export default function AdminMistakesTab({
       ) : (
         <Carousel interval={null} wrap={false}>
           {suggestions.map((suggestion) => (
-            <Carousel.Item key={suggestion.id}>
+            <Carousel.Item key={suggestion.mistake.id}>
               <MistakeSuggestionCard
                 suggestion={suggestion}
                 triggerRefresh={triggerRefresh}

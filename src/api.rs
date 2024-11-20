@@ -2,16 +2,18 @@ use crate::auth::authorize;
 use crate::error::AppError;
 use crate::hebrew_db::HebrewDb;
 use crate::types::{
-    CanonicalRequest, MistakeReport, MistakeSuggestion, PersonMistake, PersonMistakes, Translation,
-    TranslationSuggestion,
+    CanonicalRequest, DiscardMistakeSuggestion, MistakeReport, MistakeSuggestion, PersonMistake,
+    PersonMistakes, SuggestedMistake, Translation, TranslationSuggestion,
 };
 use axum::extract::Path;
 use axum::routing::{delete, get, post};
 use axum::Router;
 use axum::{extract::State, Json};
+use axum_client_ip::XForwardedFor;
 use axum_extra::headers::authorization::Basic;
 use axum_extra::headers::Authorization;
 use axum_extra::TypedHeader;
+use std::net::IpAddr;
 use std::sync::{Arc, Mutex};
 use tracing::instrument;
 
@@ -89,9 +91,16 @@ pub async fn report_mistake(
 #[instrument(skip(state), err)]
 pub async fn suggest_mistake(
     State(state): State<AppState>,
+    XForwardedFor(ips): XForwardedFor,
     Json(payload): Json<MistakeSuggestion>,
 ) -> Result<Json<i64>, AppError> {
-    Ok(Json(state.db.lock().unwrap().suggest_mistake(payload)?))
+    let reporter = reporter(ips);
+    Ok(Json(state.db.lock().unwrap().suggest_mistake(
+        SuggestedMistake {
+            mistake: payload,
+            reporter,
+        },
+    )?))
 }
 
 #[instrument(skip(state), err)]
@@ -132,7 +141,7 @@ pub async fn translate(
 pub async fn discard_mistake_suggestion(
     State(state): State<AppState>,
     TypedHeader(authorization): TypedHeader<Authorization<Basic>>,
-    Json(payload): Json<i64>,
+    Json(payload): Json<DiscardMistakeSuggestion>,
 ) -> Result<(), AppError> {
     authenticate(authorization).await?;
     state
@@ -161,7 +170,7 @@ pub async fn discard_translation_suggestion(
 #[instrument(skip(state), err)]
 pub async fn all_mistake_suggestions(
     State(state): State<AppState>,
-) -> Result<Json<Vec<MistakeSuggestion>>, AppError> {
+) -> Result<Json<Vec<SuggestedMistake>>, AppError> {
     Ok(Json(state.db.lock().unwrap().all_mistake_suggestions()?))
 }
 
@@ -180,7 +189,6 @@ pub async fn add_canonical(
     TypedHeader(authorization): TypedHeader<Authorization<Basic>>,
     Json(payload): Json<CanonicalRequest>,
 ) -> Result<(), AppError> {
-    // authenticate(authorization).await?;
     state.db.lock().unwrap().add_canonical(payload)?;
     Ok(())
 }
@@ -221,5 +229,13 @@ async fn authenticate(header: Authorization<Basic>) -> Result<(), AppError> {
         Ok(())
     } else {
         Err(AppError::AuthError)
+    }
+}
+
+fn reporter(ips: Vec<IpAddr>) -> String {
+    let ip = ips.first();
+    match ip {
+        None => "No IP".to_owned(),
+        Some(ip) => dns_lookup::lookup_addr(ip).unwrap_or(ip.to_string()),
     }
 }

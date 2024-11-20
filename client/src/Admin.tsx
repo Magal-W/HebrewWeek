@@ -11,16 +11,12 @@ import AdminCanonicalizationTab from "./NewCanonicalization";
 async function getAllTranslationSuggestions(): Promise<
   TranslationSuggestion[]
 > {
-  const response = verifyResponse(
-    await fetch("/api/suggest/translations"),
-  );
+  const response = verifyResponse(await fetch("/api/suggest/translations"));
   return await response.json();
 }
 
-async function getAllMistakeSuggestions(): Promise<MistakeSuggestion[]> {
-  const response = verifyResponse(
-    await fetch("/api/suggest/mistakes"),
-  );
+async function getAllMistakeSuggestions(): Promise<SuggestedMistake[]> {
+  const response = verifyResponse(await fetch("/api/suggest/mistakes"));
   return await response.json();
 }
 
@@ -30,7 +26,7 @@ function AdminTabs({ password }: { password: string }) {
     TranslationSuggestion[]
   >([]);
   const [mistakeSuggestions, setMistakeSuggestions] = useState<
-    MistakeSuggestion[]
+    SuggestedMistake[]
   >([]);
 
   useEffect(() => {

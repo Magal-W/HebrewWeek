@@ -3,8 +3,8 @@ use itertools::Itertools;
 use rusqlite::{named_params, Connection, Error::QueryReturnedNoRows};
 
 use crate::types::{
-    CanonicalRequest, CountedMistake, MistakeReport, MistakeSuggestion, PersonMistake,
-    PersonMistakes, Translation, TranslationSuggestion,
+    CanonicalRequest, CountedMistake, DiscardMistakeSuggestion, MistakeReport, MistakeSuggestion,
+    PersonMistake, PersonMistakes, SuggestedMistake, Translation, TranslationSuggestion,
 };
 
 /// Represents a canonical representation (dictionary choice) that can be stored in "source-of-truth" tables
@@ -97,10 +97,17 @@ impl HebrewDb {
         }
     }
 
-    pub fn suggest_mistake(&self, suggestion: MistakeSuggestion) -> Result<i64> {
+    pub fn suggest_mistake(&self, suggestion: SuggestedMistake) -> Result<i64> {
         self.0
-            .prepare("INSERT INTO MistakesSuggestions VALUES(:name, :mistake, :context)")?
-            .insert([suggestion.name, suggestion.mistake, suggestion.context])
+            .prepare(
+                "INSERT INTO MistakesSuggestions VALUES(:name, :mistake, :context, :reporter)",
+            )?
+            .insert([
+                suggestion.mistake.name,
+                suggestion.mistake.mistake,
+                suggestion.mistake.context,
+                suggestion.reporter,
+            ])
             .map_err(|err| err.into())
     }
 
@@ -140,28 +147,41 @@ impl HebrewDb {
         }
     }
 
-    pub fn discard_mistake_suggestion(&self, suggestion_id: i64) -> Result<()> {
-        let suggestion: MistakeSuggestion = self
+    pub fn discard_mistake_suggestion(&self, suggestion: DiscardMistakeSuggestion) -> Result<()> {
+        let suggested_mistake: SuggestedMistake = self
             .0
             .prepare("SELECT * FROM MistakesSuggestions WHERE ROWID = :id")?
-            .query_row([suggestion_id], |row| {
-                Ok(MistakeSuggestion {
-                    id: 0,
-                    name: row.get("Name")?,
-                    mistake: row.get("Mistake")?,
-                    context: row.get("Context")?,
+            .query_row([suggestion.id], |row| {
+                Ok(SuggestedMistake {
+                    mistake: MistakeSuggestion {
+                        id: suggestion.id,
+                        name: row.get("Name")?,
+                        mistake: row.get("Mistake")?,
+                        context: row.get("Context")?,
+                    },
+                    reporter: row.get("Reporter")?,
                 })
             })?;
         ensure!(
             self.0
                 .prepare("DELETE FROM MistakesSuggestions WHERE ROWID = :id")?
-                .execute([suggestion_id])?
+                .execute([suggestion.id])?
                 == 1,
-            format!("Failed to delete mistake suggestion with id {suggestion_id}")
+            format!(
+                "Failed to delete mistake suggestion with id {}",
+                suggestion.id
+            )
         );
+        let params = named_params! {
+            ":name": suggested_mistake.mistake.name,
+             ":mistake":suggested_mistake.mistake.mistake,
+             ":context":suggested_mistake.mistake.context,
+             ":reporter": suggested_mistake.reporter,
+             ":accepted": suggestion.accepted
+        };
         self.0
-            .prepare("INSERT INTO MistakesSuggestionsArchive VALUES(:name, :mistake, :context)")?
-            .insert([suggestion.name, suggestion.mistake, suggestion.context])?;
+            .prepare("INSERT INTO MistakesSuggestionsArchive VALUES(:name, :mistake, :context, :reporter, :accepted)")?
+            .insert(params)?;
         Ok(())
     }
 
@@ -176,15 +196,18 @@ impl HebrewDb {
         Ok(())
     }
 
-    pub fn all_mistake_suggestions(&self) -> Result<Vec<MistakeSuggestion>> {
+    pub fn all_mistake_suggestions(&self) -> Result<Vec<SuggestedMistake>> {
         self.0
             .prepare("SELECT ROWID,* FROM MistakesSuggestions")?
             .query_map([], |row| {
-                Ok(MistakeSuggestion {
-                    id: row.get("ROWID")?,
-                    name: row.get("Name")?,
-                    mistake: row.get("Mistake")?,
-                    context: row.get("Context")?,
+                Ok(SuggestedMistake {
+                    mistake: MistakeSuggestion {
+                        id: row.get("ROWID")?,
+                        name: row.get("Name")?,
+                        mistake: row.get("Mistake")?,
+                        context: row.get("Context")?,
+                    },
+                    reporter: row.get("Reporter")?,
                 })
             })?
             .try_collect()
@@ -199,6 +222,7 @@ impl HebrewDb {
                     id: row.get("ROWID")?,
                     english: row.get("English")?,
                     hebrew: row.get("Hebrew")?,
+                    // suggestor: row.get("Suggestor")?,
                 })
             })?
             .try_collect()
@@ -272,6 +296,7 @@ impl HebrewDb {
                 ("Name", DbFieldType::String),
                 ("Mistake", DbFieldType::String),
                 ("Context", DbFieldType::String),
+                ("Reporter", DbFieldType::String),
             ],
         )?;
         Self::create_table(
@@ -282,6 +307,8 @@ impl HebrewDb {
                 ("Name", DbFieldType::String),
                 ("Mistake", DbFieldType::String),
                 ("Context", DbFieldType::String),
+                ("Reporter", DbFieldType::String),
+                ("Accepted", DbFieldType::Int),
             ],
         )?;
         Self::create_table(
@@ -291,7 +318,7 @@ impl HebrewDb {
                 ("English", DbFieldType::String),
                 ("Hebrew", DbFieldType::String),
             ],
-            [],
+            [], // [("Suggestor", DbFieldType::String)],
         )?;
         Self::create_table(
             &self.0,
@@ -300,7 +327,7 @@ impl HebrewDb {
                 ("English", DbFieldType::String),
                 ("Hebrew", DbFieldType::String),
             ],
-            [],
+            [], // [("Suggestor", DbFieldType::String)],
         )?;
         Self::create_table(
             &self.0,
